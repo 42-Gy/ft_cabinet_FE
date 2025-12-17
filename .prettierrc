@@ -1,0 +1,24 @@
+{
+  "singleQuote": true,
+  "semi": false,
+  "trailingComma": "all",
+  "printWidth": 100,
+  "plugins": ["@ianvs/prettier-plugin-sort-imports"],
+  "importOrder": [
+    "^react$",
+    "^react-dom$",
+    "^@chakra-ui/(.*)$",
+    "^@?\\w",
+    "^@/app/(.*)$",
+    "^@/components/(.*)$",
+    "^@/features/(.*)$",
+    "^@/libs/(.*)$",
+    "^@/styles/(.*)$",
+    "^@/types/(.*)$",
+    "^@/utils/(.*)$",
+    "^[./]"
+  ],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true,
+  "importOrderCaseInsensitive": true
+}
