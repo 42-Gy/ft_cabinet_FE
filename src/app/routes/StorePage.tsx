@@ -1,4 +1,4 @@
-import { Box, Button, SimpleGrid, Stack, Text, useColorModeValue } from '@chakra-ui/react'
+import { Box, Button, Icon, SimpleGrid, Stack, Text, useColorModeValue } from '@chakra-ui/react'
 import { useState } from 'react'
 import { PageHeader } from '@/components/molecules/PageHeader'
 import { EmptyState } from '@/components/molecules/EmptyState'
@@ -27,7 +27,10 @@ export const StorePage = () => {
 
   return (
     <Stack spacing={8}>
-      <PageHeader title="스토어" description="대여권 · 연장권 · 이사권 · 패널티 감면권을 구매하세요." />
+      <PageHeader
+        title="스토어"
+        description="연장권/이사권/패널티 감면권을 수박씨로 즉시 구매할 수 있어요."
+      />
       <Box borderWidth={1} borderRadius="xl" bg={cardBg} p={6} borderColor={borderColor} shadow="sm">
         <Text fontWeight="bold">보유 코인</Text>
         <Text fontSize="2xl" fontWeight="black">
@@ -36,39 +39,51 @@ export const StorePage = () => {
       </Box>
 
       <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-        {STORE_ITEMS.map((item) => (
-          <Box
-            key={item.key}
-            borderWidth={1}
-            borderColor={borderColor}
-            borderRadius="xl"
+        {STORE_ITEMS.map((item) => {
+          const isDisabled = Boolean(item.disabled)
+          const isLoading = pendingItemId === item.itemId && buyMutation.isPending
+          return (
+            <Box
+              key={item.key}
+              borderWidth={1}
+              borderColor={borderColor}
+              borderRadius="xl"
             p={6}
             bg={cardBg}
             shadow="sm"
-          >
-            <Stack spacing={3}>
-              <Text fontSize="xl" fontWeight="bold">
-                {item.title}
-              </Text>
-              <Text fontSize="sm" color={textMuted}>
-                {item.description}
-              </Text>
-              <Text fontWeight="semibold">{item.priceLabel}</Text>
-              <Button
-                colorScheme="brand"
-                onClick={() => {
-                  setPendingItemId(item.itemId)
-                  buyMutation.mutate(item.itemId, {
-                    onSettled: () => setPendingItemId(null),
-                  })
-                }}
-                isLoading={pendingItemId === item.itemId && buyMutation.isPending}
-              >
-                구매하기
-              </Button>
-            </Stack>
-          </Box>
-        ))}
+            >
+              <Stack spacing={3}>
+                <Icon
+                  as={item.icon}
+                  boxSize={12}
+                  color={isDisabled ? 'gray.400' : 'brand.500'}
+                />
+                <Text fontSize="xl" fontWeight="bold">
+                  {item.title}
+                </Text>
+                <Text fontSize="sm" color={textMuted}>
+                  {item.description}
+                </Text>
+                <Text fontWeight="semibold">{item.priceLabel}</Text>
+                <Button
+                  colorScheme={isDisabled ? 'gray' : 'brand'}
+                  variant={isDisabled ? 'outline' : 'solid'}
+                  onClick={() => {
+                    if (isDisabled) return
+                    setPendingItemId(item.itemId)
+                    buyMutation.mutate(item.itemId, {
+                      onSettled: () => setPendingItemId(null),
+                    })
+                  }}
+                  isDisabled={isDisabled}
+                  isLoading={isLoading}
+                >
+                  {isDisabled ? '구매 불가' : '구매하기'}
+                </Button>
+              </Stack>
+            </Box>
+          )
+        })}
       </SimpleGrid>
     </Stack>
   )

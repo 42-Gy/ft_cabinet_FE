@@ -1,3 +1,11 @@
+import type { IconType } from 'react-icons'
+import {
+  RiExchangeLine,
+  RiShieldCheckLine,
+  RiTicket2Line,
+  RiTimerLine,
+} from 'react-icons/ri'
+
 export const STORE_ITEM_IDS = {
   RENT: 1,
   EXTEND: 2,
@@ -13,35 +21,42 @@ export interface StoreItem {
   description: string
   priceLabel: string
   itemId: number
+  icon: IconType
+  disabled?: boolean
 }
 
 export const STORE_ITEMS: StoreItem[] = [
   {
     key: 'RENT',
     title: '대여권',
-    description: '새 사물함을 빌릴 수 있는 기본 이용권입니다.',
-    priceLabel: '100 코인',
+    description: '출석/미션 보상 전용. 스토어에서 구매할 수 없습니다.',
+    priceLabel: '구매 불가',
     itemId: STORE_ITEM_IDS.RENT,
+    icon: RiTicket2Line,
+    disabled: true,
   },
   {
     key: 'EXTEND',
     title: '연장권',
-    description: '현재 사용 중인 사물함을 기간 연장할 수 있어요.',
-    priceLabel: '80 코인',
+    description: '현재 사물함을 15일 연장합니다.',
+    priceLabel: '1,000 수박씨',
     itemId: STORE_ITEM_IDS.EXTEND,
+    icon: RiTimerLine,
   },
   {
     key: 'MOVE',
     title: '이사권',
-    description: '다른 섹션으로 이동하고 싶을 때 사용하는 교체권입니다.',
-    priceLabel: '60 코인',
+    description: '다른 섹션/번호로 이동하고 싶을 때 사용하세요.',
+    priceLabel: '1,000 수박씨',
     itemId: STORE_ITEM_IDS.MOVE,
+    icon: RiExchangeLine,
   },
   {
     key: 'PENALTY_REDUCE',
     title: '패널티 감면권',
-    description: '연체/패널티를 한 번 면제받을 수 있는 티켓입니다.',
-    priceLabel: '40 코인',
+    description: '패널티/연체 일수를 한 번 줄여줍니다.',
+    priceLabel: '600 수박씨',
     itemId: STORE_ITEM_IDS.PENALTY_REDUCE,
+    icon: RiShieldCheckLine,
   },
 ]

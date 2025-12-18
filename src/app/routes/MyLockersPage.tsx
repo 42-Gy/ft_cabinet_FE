@@ -18,7 +18,7 @@ import {
   useDisclosure,
 } from '@chakra-ui/react'
 import { Link as RouterLink } from 'react-router-dom'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { PageHeader } from '@/components/molecules/PageHeader'
 import { LoadingState } from '@/components/molecules/LoadingState'
 import { ErrorState } from '@/components/molecules/ErrorState'
@@ -26,36 +26,23 @@ import { EmptyState } from '@/components/molecules/EmptyState'
 import { useAuthToken } from '@/features/auth/hooks/useAuthToken'
 import { useMeQuery } from '@/features/users/hooks/useMeQuery'
 import {
-  useBuyItemMutation,
   useExtendTicketMutation,
   usePenaltyTicketMutation,
   useReturnCabinetMutation,
   useSwapTicketMutation,
 } from '@/features/lockers/hooks/useLockerData'
-import { STORE_ITEM_IDS } from '@/features/store/data/items'
 import { formatDate } from '@/utils/date'
-import type { UserItem } from '@/types/user'
-
-type ItemUsage = 'extend' | 'swap' | 'penalty' | null
-
-const detectUsage = (itemName: string): ItemUsage => {
-  if (itemName.includes('연장')) return 'extend'
-  if (itemName.includes('이사')) return 'swap'
-  if (itemName.includes('감면')) return 'penalty'
-  return null
-}
+import type { UserItemType } from '@/types/user'
 
 export const MyLockersPage = () => {
   const { token } = useAuthToken()
   const { data: me, isLoading, isError, refetch } = useMeQuery()
   const returnMutation = useReturnCabinetMutation()
-  const buyMutation = useBuyItemMutation()
   const extendMutation = useExtendTicketMutation()
   const swapMutation = useSwapTicketMutation()
   const penaltyMutation = usePenaltyTicketMutation()
   const { isOpen, onOpen, onClose: closeModal } = useDisclosure()
   const [swapTarget, setSwapTarget] = useState('')
-  const [swapItem, setSwapItem] = useState<UserItem | null>(null)
 
   const cardBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200')
@@ -76,19 +63,28 @@ export const MyLockersPage = () => {
 
   const hasLocker = Boolean(me.lentCabinetId)
 
-  const handleUseItem = (item: UserItem) => {
-    const usage = detectUsage(item.itemName)
-    if (!usage) return
-    if (usage === 'extend') {
+  const itemCounts = useMemo(() => {
+    return me.myItems.reduce<Record<UserItemType, number>>((acc, item) => {
+      acc[item.itemType] = (acc[item.itemType] ?? 0) + 1
+      return acc
+    }, {} as Record<UserItemType, number>)
+  }, [me.myItems])
+
+  const getCount = (type: UserItemType) => itemCounts[type] ?? 0
+
+  const handleUseTicket = (type: UserItemType) => {
+    if (getCount(type) === 0) return
+    if (type === 'EXTENSION') {
+      if (!hasLocker) return
       extendMutation.mutate()
       return
     }
-    if (usage === 'penalty') {
+    if (type === 'PENALTY_EXEMPTION') {
       penaltyMutation.mutate()
       return
     }
-    if (usage === 'swap') {
-      setSwapItem(item)
+    if (type === 'SWAP') {
+      if (!hasLocker) return
       setSwapTarget('')
       onOpen()
     }
@@ -104,7 +100,6 @@ export const MyLockersPage = () => {
       },
       onSettled: () => {
         setSwapTarget('')
-        setSwapItem(null)
       },
     })
   }
@@ -128,6 +123,12 @@ export const MyLockersPage = () => {
             <Badge colorScheme="purple" w="fit-content">
               코인 {me.coin.toLocaleString()}개
             </Badge>
+            <Text fontSize="sm" color={textMuted}>
+              이번 달 로그타임: {me.monthlyLogtime.toLocaleString()}분
+            </Text>
+            <Text fontSize="sm" color={textMuted}>
+              패널티 일수: {me.penaltyDays}일
+            </Text>
           </Stack>
 
           <Divider my={6} />
@@ -145,9 +146,18 @@ export const MyLockersPage = () => {
                   대여 시작: {formatDate(me.lentStartedAt)}
                 </Text>
               )}
-              {me.lentExpiredAt && (
+              {(() => {
+                const expiresAt = me.expiredAt ?? me.lentExpiredAt ?? null
+                if (!expiresAt) return null
+                return (
+                  <Text fontSize="sm" color={textMuted}>
+                    만료 예정: {formatDate(expiresAt)}
+                  </Text>
+                )
+              })()}
+              {me.previousPassword && (
                 <Text fontSize="sm" color={textMuted}>
-                  만료 예정: {formatDate(me.lentExpiredAt)}
+                  이전 비밀번호: {me.previousPassword}
                 </Text>
               )}
               <Stack direction={{ base: 'column', sm: 'row' }} spacing={3}>
@@ -158,18 +168,6 @@ export const MyLockersPage = () => {
                   isLoading={returnMutation.isPending}
                 >
                   반납
-                </Button>
-                <Button
-                  variant="outline"
-                  flex={1}
-                  onClick={() =>
-                    buyMutation.mutate(STORE_ITEM_IDS.RENT, {
-                      onSettled: () => void 0,
-                    })
-                  }
-                  isLoading={buyMutation.isPending}
-                >
-                  대여권 구매
                 </Button>
               </Stack>
             </Stack>
@@ -189,44 +187,56 @@ export const MyLockersPage = () => {
             {me.myItems.length === 0 ? (
               <EmptyState
                 title="보유한 아이템이 없습니다"
-                description="스토어에서 대여권/연장권을 구매해 보세요."
+                description="스토어에서 연장권/이사권/감면권을 구매해 보세요."
               />
             ) : (
               <Stack spacing={3}>
-                {me.myItems.map((item) => {
-                  const usage = detectUsage(item.itemName)
-                  return (
-                    <Box
-                      key={item.itemHistoryId}
-                      borderWidth={1}
-                      borderRadius="lg"
-                      p={4}
-                      borderColor={borderColor}
-                      bg={itemBg}
-                    >
-                      <Stack spacing={1}>
-                        <Text fontWeight="bold">{item.itemName}</Text>
-                        <Text fontSize="xs" color={textMuted}>
-                          구매일: {formatDate(item.purchaseAt)}
-                        </Text>
-                        <Button
-                          mt={2}
-                          size="sm"
-                          colorScheme="brand"
-                          onClick={() => handleUseItem(item)}
-                          isDisabled={!usage || (!hasLocker && usage !== 'penalty')}
-                          isLoading={
-                            (usage === 'extend' && extendMutation.isPending) ||
-                            (usage === 'penalty' && penaltyMutation.isPending) ||
-                            (usage === 'swap' && swapMutation.isPending && swapItem?.itemHistoryId === item.itemHistoryId)
-                          }
-                        >
-                          {usage ? '사용' : '사용 불가'}
-                        </Button>
-                      </Stack>
-                    </Box>
-                  )
-                })}
+                <TicketCard
+                  title="연장권"
+                  description="현재 사물함을 15일 연장합니다."
+                  count={getCount('EXTENSION')}
+                  buttonLabel="연장하기"
+                  onClick={() => handleUseTicket('EXTENSION')}
+                  isLoading={extendMutation.isPending}
+                  isDisabled={!hasLocker}
+                  bg={itemBg}
+                  textMuted={textMuted}
+                  borderColor={borderColor}
+                />
+                <TicketCard
+                  title="이사권"
+                  description="다른 번호로 이동할 수 있습니다."
+                  count={getCount('SWAP')}
+                  buttonLabel="이동하기"
+                  onClick={() => handleUseTicket('SWAP')}
+                  isLoading={swapMutation.isPending}
+                  isDisabled={!hasLocker}
+                  bg={itemBg}
+                  textMuted={textMuted}
+                  borderColor={borderColor}
+                />
+                <TicketCard
+                  title="패널티 감면권"
+                  description="패널티 일수를 1회 면제합니다."
+                  count={getCount('PENALTY_EXEMPTION')}
+                  buttonLabel="감면하기"
+                  onClick={() => handleUseTicket('PENALTY_EXEMPTION')}
+                  isLoading={penaltyMutation.isPending}
+                  bg={itemBg}
+                  textMuted={textMuted}
+                  borderColor={borderColor}
+                />
+                <TicketCard
+                  title="대여권"
+                  description="출석/미션 보상으로만 사용할 수 있습니다."
+                  count={getCount('LENT')}
+                  buttonLabel="관리자 지급"
+                  onClick={() => {}}
+                  isDisabled
+                  bg={itemBg}
+                  textMuted={textMuted}
+                  borderColor={borderColor}
+                />
               </Stack>
             )}
           </Stack>
@@ -240,7 +250,6 @@ export const MyLockersPage = () => {
       <Modal
         isOpen={isOpen}
         onClose={() => {
-          setSwapItem(null)
           setSwapTarget('')
           closeModal()
         }}
@@ -265,7 +274,6 @@ export const MyLockersPage = () => {
               variant="ghost"
               mr={3}
               onClick={() => {
-                setSwapItem(null)
                 setSwapTarget('')
                 closeModal()
               }}
@@ -284,5 +292,58 @@ export const MyLockersPage = () => {
         </ModalContent>
       </Modal>
     </Stack>
+  )
+}
+
+interface TicketCardProps {
+  title: string
+  description: string
+  count: number
+  buttonLabel: string
+  onClick: () => void
+  isLoading?: boolean
+  isDisabled?: boolean
+  bg: string
+  textMuted: string
+  borderColor: string
+}
+
+const TicketCard = ({
+  title,
+  description,
+  count,
+  buttonLabel,
+  onClick,
+  isLoading,
+  isDisabled,
+  bg,
+  textMuted,
+  borderColor,
+}: TicketCardProps) => {
+  const disabled = isDisabled || count === 0
+
+  return (
+    <Box borderWidth={1} borderRadius="lg" p={4} borderColor={borderColor} bg={bg}>
+      <Stack spacing={1}>
+        <HStack justify="space-between">
+          <Text fontWeight="bold">{title}</Text>
+          <Badge colorScheme={count > 0 ? 'green' : 'gray'}>{count}개</Badge>
+        </HStack>
+        <Text fontSize="sm" color={textMuted}>
+          {description}
+        </Text>
+        <Button
+          mt={3}
+          size="sm"
+          colorScheme="brand"
+          variant={disabled ? 'outline' : 'solid'}
+          onClick={onClick}
+          isDisabled={disabled}
+          isLoading={isLoading}
+        >
+          {disabled ? '사용 불가' : buttonLabel}
+        </Button>
+      </Stack>
+    </Box>
   )
 }
