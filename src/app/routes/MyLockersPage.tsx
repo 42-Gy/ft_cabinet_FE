@@ -49,6 +49,14 @@ export const MyLockersPage = () => {
   const textMuted = useColorModeValue('gray.600', 'gray.400')
   const itemBg = useColorModeValue('gray.50', 'gray.700')
 
+  const myItems = me?.myItems ?? []
+  const itemCounts = useMemo(() => {
+    return myItems.reduce<Record<UserItemType, number>>((acc, item) => {
+      acc[item.itemType] = (acc[item.itemType] ?? 0) + 1
+      return acc
+    }, {} as Record<UserItemType, number>)
+  }, [myItems])
+
   if (!token) {
     return (
       <EmptyState
@@ -62,13 +70,6 @@ export const MyLockersPage = () => {
   if (isError || !me) return <ErrorState onRetry={refetch} />
 
   const hasLocker = Boolean(me.lentCabinetId)
-
-  const itemCounts = useMemo(() => {
-    return me.myItems.reduce<Record<UserItemType, number>>((acc, item) => {
-      acc[item.itemType] = (acc[item.itemType] ?? 0) + 1
-      return acc
-    }, {} as Record<UserItemType, number>)
-  }, [me.myItems])
 
   const getCount = (type: UserItemType) => itemCounts[type] ?? 0
 
