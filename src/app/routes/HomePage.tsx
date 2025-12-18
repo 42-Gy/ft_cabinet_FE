@@ -1,5 +1,5 @@
 import { Badge, Box, Button, Text, VStack } from '@chakra-ui/react'
-import { AdminDashboard } from '@/features/status/components/AdminDashboard'
+import { HomeOverview } from '@/features/status/components/HomeOverview'
 
 export const HomePage = () => (
   <VStack spacing={10} w="full">
@@ -40,6 +40,6 @@ export const HomePage = () => (
       </Button>
     </Box>
 
-    <AdminDashboard />
+    <HomeOverview />
   </VStack>
 )

@@ -1,4 +1,4 @@
-import { AdminDashboard } from '@/features/status/components/AdminDashboard'
+import { AdminDashboard } from '@/features/admin/components/AdminDashboard'
 
 export const AdminPage = () => {
   return <AdminDashboard />

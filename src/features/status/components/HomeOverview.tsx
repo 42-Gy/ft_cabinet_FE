@@ -23,7 +23,6 @@ import { RiLockUnlockLine, RiSeedlingLine, RiStore2Line } from 'react-icons/ri'
 import { EmptyState } from '@/components/molecules/EmptyState'
 import { ErrorState } from '@/components/molecules/ErrorState'
 import { LoadingState } from '@/components/molecules/LoadingState'
-import { PageHeader } from '@/components/molecules/PageHeader'
 import { cabinetSections, extractSectionId } from '@/features/lockers/data/cabinetSections'
 import {
   useCabinetSummaryAllQuery,
@@ -37,7 +36,7 @@ const guideCards = [
     title: '사물함 대여법',
     summary: '지도에서 섹션을 선택하고 Drawer로 상세 상태를 확인하세요.',
     detail:
-      '42 OAuth 로그인 후 락커 페이지에서 원하는 섹션을 고르면 AVAILABLE 카드가 Drawer와 함께 나타납니다. “이 사물함 대여하기” 버튼을 누르면 TanStack Query가 자동 갱신되어 /my/lockers에서 대여 내용을 즉시 확인하고 관리할 수 있습니다.',
+      '42 OAuth 로그인 후 사물함 페이지에서 원하는 섹션을 고르면 AVAILABLE 카드가 Drawer와 함께 나타납니다. “이 사물함 대여하기” 버튼을 누르면 TanStack Query가 자동 갱신되어 /my/lockers에서 대여 내용을 즉시 확인하고 관리할 수 있습니다.',
   },
   {
     title: '수박 얻는 법',
@@ -53,7 +52,7 @@ const guideCards = [
   },
 ]
 
-export const AdminDashboard = () => {
+export const HomeOverview = () => {
   const guideModal = useDisclosure()
   const summaryQuery = useCabinetSummaryAllQuery()
   const summary2F = useCabinetSummaryQuery({ floor: 2, enabled: true, requiresAuth: false })
@@ -125,7 +124,7 @@ export const AdminDashboard = () => {
     <Stack spacing={10} w="full">
       <Box borderRadius="2xl" borderWidth={1} borderColor="whiteAlpha.200" p={6}>
         <Text fontWeight="bold" mb={4}>
-          SUBAK 플랫폼 안내
+          SUBAK Stories
         </Text>
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
           {guideCards.map((guide) => (
