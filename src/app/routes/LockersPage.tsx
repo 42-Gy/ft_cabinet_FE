@@ -138,13 +138,6 @@ export const LockersPage = () => {
   const legendUnavailable = useColorModeValue('gray.500', 'gray.300')
   const legendSelected = useColorModeValue('blue.500', 'blue.200')
   const indicatorInactive = useColorModeValue('gray.300', 'whiteAlpha.400')
-  const statusDotColors: Record<CabinetStatus, string> = {
-    AVAILABLE: useColorModeValue('green.400', 'green.300'),
-    FULL: useColorModeValue('orange.400', 'orange.300'),
-    OVERDUE: useColorModeValue('purple.400', 'purple.300'),
-    BROKEN: useColorModeValue('red.400', 'red.300'),
-    DISABLED: useColorModeValue('gray.500', 'gray.400'),
-  }
 
   const sectionsForFloor: LockerSectionMeta[] = useMemo(
     () => (activeFloor ? getSectionsByFloor(activeFloor) : []),
@@ -305,8 +298,8 @@ export const LockersPage = () => {
           <Button
             colorScheme="brand"
             isDisabled={!token || detail.status !== 'AVAILABLE'}
-            isLoading={rentMutation.isPending && rentMutation.variables === detail.cabinetId}
-            onClick={() => token && detail.status === 'AVAILABLE' && rentMutation.mutate(detail.cabinetId)}
+            isLoading={rentMutation.isPending && rentMutation.variables === detail.visibleNum}
+            onClick={() => token && detail.status === 'AVAILABLE' && rentMutation.mutate(detail.visibleNum)}
           >
             {token ? '이 사물함 대여하기' : '로그인 후 대여 가능'}
           </Button>
@@ -494,7 +487,8 @@ export const LockersPage = () => {
                       const badgeMeta = statusBadgeMeta[cabinet.status]
                       const palette = lockerStatusPalette[cabinet.status] ?? defaultCardStyle
                       const statusStyle = isMine ? myLockerStyle : isSelected ? selectedPalette : palette
-                      const dotColor = statusDotColors[cabinet.status] ?? legendUnavailable
+                      const isAvailable = cabinet.status === 'AVAILABLE'
+                      const bgImage = isAvailable ? "url('/subak_ncabi.png')" : "url('/subak_cabi.png')"
                       return (
                         <Box
                           key={cabinet.cabinetId}
@@ -510,22 +504,21 @@ export const LockersPage = () => {
                           cursor="pointer"
                           transition="all 0.2s"
                           boxShadow={isSelected ? 'xl' : 'md'}
-                          bgImage="url('/subak_cabi.png')"
+                          bg={statusStyle.bg}
+                          bgImage={bgImage}
                           bgSize="cover"
                           bgPos="center"
+                          bgRepeat="no-repeat"
                           onClick={() => handleLockerSelect(cabinet)}
                         >
-                          <Stack spacing={0} align="center" w="full" px={1}>
-                            <Text
-                              fontWeight="extrabold"
-                              fontSize={{ base: 'md', md: 'lg' }}
-                              color={isMine ? 'brand.900' : 'white'}
-                              textShadow="0 1px 2px rgba(0,0,0,0.4)"
-                            >
-                              {cabinet.visibleNum}
-                            </Text>
-                            <Box w="6px" h="6px" borderRadius="full" bg={dotColor} borderWidth="1px" borderColor="whiteAlpha.700" />
-                          </Stack>
+                          <Text
+                            fontWeight="extrabold"
+                            fontSize={{ base: 'lg', md: 'xl' }}
+                            color={isAvailable ? 'brand.900' : 'white'}
+                            textShadow="0 1px 4px rgba(0,0,0,0.45)"
+                          >
+                            {cabinet.visibleNum}
+                          </Text>
                         </Box>
                       )
                     })}
@@ -548,9 +541,9 @@ export const LockersPage = () => {
                       colorScheme="brand"
                       isDisabled={!canRentSelected}
                       isLoading={
-                        rentMutation.isPending && rentMutation.variables === selectedCabinet.cabinetId
+                        rentMutation.isPending && rentMutation.variables === selectedCabinet.visibleNum
                       }
-                      onClick={() => canRentSelected && rentMutation.mutate(selectedCabinet.cabinetId)}
+                      onClick={() => canRentSelected && rentMutation.mutate(selectedCabinet.visibleNum)}
                     >
                       {token ? '이 사물함 대여하기' : '로그인 후 대여 가능'}
                     </Button>
