@@ -9,9 +9,11 @@ import {
   getCabinets,
   rentCabinet,
   returnCabinet,
+  updateAutoExtension,
   useExtensionTicket,
   usePenaltyTicket,
   useSwapTicket,
+  type ReturnCabinetPayload,
 } from '@/features/lockers/api/lockers'
 import { useAuthToken } from '@/features/auth/hooks/useAuthToken'
 import { meQueryKeys } from '@/features/users/hooks/useMeQuery'
@@ -149,12 +151,12 @@ export const useReturnCabinetMutation = () => {
   const { token } = useAuthToken()
   const invalidate = useInvalidateLockerQueries()
 
-  return useMutation<LockerActionResult>({
-    mutationFn: async () => {
+  return useMutation<LockerActionResult, unknown, ReturnCabinetPayload>({
+    mutationFn: async (payload) => {
       if (!token) {
         throw new Error('로그인이 필요합니다.')
       }
-      return returnCabinet()
+      return returnCabinet(payload)
     },
     onSuccess: (result) => {
       toast({ description: result.message ?? '사물함 반납이 완료되었습니다.', status: 'success' })
@@ -243,6 +245,24 @@ export const usePenaltyTicketMutation = () => {
     },
     onSuccess: (result) => {
       toast({ description: result.message ?? '감면권을 사용했습니다.', status: 'success' })
+      invalidate()
+    },
+    onError: (error) => toast({ description: parseErrorMessage(error), status: 'error' }),
+  })
+}
+
+export const useAutoExtensionMutation = () => {
+  const toast = useToast()
+  const { token } = useAuthToken()
+  const invalidate = useInvalidateLockerQueries()
+
+  return useMutation<LockerActionResult, unknown, boolean>({
+    mutationFn: async (enabled) => {
+      if (!token) throw new Error('로그인이 필요합니다.')
+      return updateAutoExtension(enabled)
+    },
+    onSuccess: (result) => {
+      toast({ description: result.message ?? '자동 연장 설정이 변경되었습니다.', status: 'success' })
       invalidate()
     },
     onError: (error) => toast({ description: parseErrorMessage(error), status: 'error' }),

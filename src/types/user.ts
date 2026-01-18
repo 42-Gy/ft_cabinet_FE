@@ -21,5 +21,6 @@ export interface UserProfile {
   lentStartedAt?: string | null
   expiredAt?: string | null
   lentExpiredAt?: string | null
+  autoExtensionEnabled?: boolean | null
   myItems: UserItem[]
 }

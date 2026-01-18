@@ -8,9 +8,20 @@ import type {
   LockerActionResult,
 } from '@/types/locker'
 
-const toActionResult = (data: unknown): LockerActionResult => ({
-  message: typeof data === 'string' ? data : '요청이 완료되었습니다.',
-})
+const toActionResult = (data: unknown): LockerActionResult => {
+  if (typeof data === 'string') {
+    return { message: data }
+  }
+  if (data && typeof data === 'object') {
+    if ('message' in data) {
+      return { message: String((data as { message?: string }).message) }
+    }
+    if ('data' in data && (data as { data?: { message?: string } }).data?.message) {
+      return { message: String((data as { data?: { message?: string } }).data?.message) }
+    }
+  }
+  return { message: '요청이 완료되었습니다.' }
+}
 
 interface CabinetRequestOptions {
   publicAccess?: boolean
@@ -49,8 +60,28 @@ export const rentCabinet = async (cabinetId: number): Promise<LockerActionResult
   return toActionResult(data)
 }
 
-export const returnCabinet = async (): Promise<LockerActionResult> => {
-  const { data } = await apiClient.post('/v4/lent/return', {})
+export interface ReturnCabinetPayload {
+  file: File
+  previousPassword: string
+  forceReturn: boolean
+  reason?: string
+}
+
+export const returnCabinet = async (
+  payload: ReturnCabinetPayload,
+): Promise<LockerActionResult> => {
+  const formData = new FormData()
+  formData.append('file', payload.file)
+  formData.append('previousPassword', payload.previousPassword)
+  formData.append('forceReturn', String(payload.forceReturn))
+  if (payload.reason) {
+    formData.append('reason', payload.reason)
+  }
+
+  const { data } = await apiClient.post('/v4/lent/return', formData)
+  if (typeof data === 'object' && data && 'message' in data) {
+    return { message: String((data as { message?: string }).message) }
+  }
   return toActionResult(data)
 }
 
@@ -72,5 +103,16 @@ export const useSwapTicket = async (newCabinetId: number): Promise<LockerActionR
 
 export const usePenaltyTicket = async (): Promise<LockerActionResult> => {
   const { data } = await apiClient.post('/v4/lent/penalty-exemption', {})
+  return toActionResult(data)
+}
+
+export const updateAutoExtension = async (
+  enabled: boolean,
+): Promise<LockerActionResult> => {
+  const { data } = await apiClient.patch('/v4/lent/extension/auto', { enabled })
+  if (typeof data === 'object' && data && 'data' in data) {
+    const nested = (data as { data?: { message?: string } }).data?.message
+    return { message: nested ?? '자동 연장 설정이 변경되었습니다.' }
+  }
   return toActionResult(data)
 }

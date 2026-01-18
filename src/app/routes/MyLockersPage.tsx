@@ -3,6 +3,8 @@ import {
   Box,
   Button,
   Divider,
+  FormControl,
+  FormLabel,
   HStack,
   Input,
   Modal,
@@ -15,11 +17,13 @@ import {
   SimpleGrid,
   Stack,
   Text,
+  Textarea,
+  Switch,
   useColorModeValue,
   useDisclosure,
 } from '@chakra-ui/react'
 import { Link as RouterLink } from 'react-router-dom'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PageHeader } from '@/components/molecules/PageHeader'
 import { LoadingState } from '@/components/molecules/LoadingState'
 import { ErrorState } from '@/components/molecules/ErrorState'
@@ -27,6 +31,7 @@ import { EmptyState } from '@/components/molecules/EmptyState'
 import { useAuthToken } from '@/features/auth/hooks/useAuthToken'
 import { useMeQuery } from '@/features/users/hooks/useMeQuery'
 import {
+  useAutoExtensionMutation,
   useExtendTicketMutation,
   usePenaltyTicketMutation,
   useReturnCabinetMutation,
@@ -42,8 +47,14 @@ export const MyLockersPage = () => {
   const extendMutation = useExtendTicketMutation()
   const swapMutation = useSwapTicketMutation()
   const penaltyMutation = usePenaltyTicketMutation()
+  const autoExtensionMutation = useAutoExtensionMutation()
   const { isOpen, onOpen, onClose: closeModal } = useDisclosure()
   const [swapTarget, setSwapTarget] = useState('')
+  const [returnFile, setReturnFile] = useState<File | null>(null)
+  const [returnPassword, setReturnPassword] = useState('')
+  const [forceReturn, setForceReturn] = useState(false)
+  const [forceReason, setForceReason] = useState('')
+  const [autoExtensionEnabled, setAutoExtensionEnabled] = useState(false)
 
   const cardBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200')
@@ -57,6 +68,12 @@ export const MyLockersPage = () => {
       return acc
     }, {} as Record<UserItemType, number>)
   }, [myItems])
+
+  useEffect(() => {
+    if (typeof me?.autoExtensionEnabled === 'boolean') {
+      setAutoExtensionEnabled(me.autoExtensionEnabled)
+    }
+  }, [me?.autoExtensionEnabled])
 
   if (!token) {
     return (
@@ -103,6 +120,33 @@ export const MyLockersPage = () => {
       onSettled: () => {
         setSwapTarget('')
       },
+    })
+  }
+
+  const handleReturnSubmit = () => {
+    if (!returnFile || returnPassword.trim().length !== 4) return
+    returnMutation.mutate(
+      {
+        file: returnFile,
+        previousPassword: returnPassword.trim(),
+        forceReturn,
+        reason: forceReturn ? forceReason.trim() : undefined,
+      },
+      {
+        onSettled: () => {
+          setReturnFile(null)
+          setReturnPassword('')
+          setForceReturn(false)
+          setForceReason('')
+        },
+      },
+    )
+  }
+
+  const handleAutoExtensionToggle = (enabled: boolean) => {
+    setAutoExtensionEnabled(enabled)
+    autoExtensionMutation.mutate(enabled, {
+      onError: () => setAutoExtensionEnabled((prev) => !prev),
     })
   }
 
@@ -162,14 +206,56 @@ export const MyLockersPage = () => {
                   이전 비밀번호: {me.previousPassword}
                 </Text>
               )}
-              <Stack direction={{ base: 'column', sm: 'row' }} spacing={3}>
+              <FormControl display="flex" alignItems="center" justifyContent="space-between">
+                <FormLabel mb={0}>자동 연장</FormLabel>
+                <Switch
+                  isChecked={autoExtensionEnabled}
+                  onChange={(event) => handleAutoExtensionToggle(event.target.checked)}
+                  isDisabled={autoExtensionMutation.isPending}
+                />
+              </FormControl>
+              <Stack spacing={3}>
+                <FormControl>
+                  <FormLabel>사물함 내부 사진</FormLabel>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => setReturnFile(event.target.files?.[0] ?? null)}
+                  />
+                </FormControl>
+                <FormControl>
+                  <FormLabel>이전 비밀번호 (4자리)</FormLabel>
+                  <Input
+                    type="password"
+                    maxLength={4}
+                    value={returnPassword}
+                    onChange={(event) => setReturnPassword(event.target.value)}
+                  />
+                </FormControl>
+                <FormControl display="flex" alignItems="center" justifyContent="space-between">
+                  <FormLabel mb={0}>강제 반납</FormLabel>
+                  <Switch
+                    isChecked={forceReturn}
+                    onChange={(event) => setForceReturn(event.target.checked)}
+                  />
+                </FormControl>
+                {forceReturn && (
+                  <FormControl>
+                    <FormLabel>강제 반납 사유</FormLabel>
+                    <Textarea
+                      placeholder="AI 검사 실패 사유"
+                      value={forceReason}
+                      onChange={(event) => setForceReason(event.target.value)}
+                    />
+                  </FormControl>
+                )}
                 <Button
                   colorScheme="red"
-                  flex={1}
-                  onClick={() => returnMutation.mutate()}
+                  onClick={handleReturnSubmit}
                   isLoading={returnMutation.isPending}
+                  isDisabled={!returnFile || returnPassword.trim().length !== 4}
                 >
-                  반납
+                  반납 요청
                 </Button>
               </Stack>
             </Stack>
