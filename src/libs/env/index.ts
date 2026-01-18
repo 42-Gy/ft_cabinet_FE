@@ -4,8 +4,8 @@ const booleanFromEnv = (value: string | undefined, fallback = false) => {
 }
 
 const fallback = {
-  apiBaseUrl: 'https://unforbearing-peter-nonvicariously.ngrok-free.dev',
-  authBaseUrl: 'https://unforbearing-peter-nonvicariously.ngrok-free.dev',
+  apiBaseUrl: 'https://ft-cabinet-server-dpa9dkauhkdkajcr.koreacentral-01.azurewebsites.net',
+  authBaseUrl: 'https://ft-cabinet-server-dpa9dkauhkdkajcr.koreacentral-01.azurewebsites.net',
   policyEmail: '010-5196-1565',
   policyContact: '한성익',
   policyUpdatedAt: '2025-12-01',
