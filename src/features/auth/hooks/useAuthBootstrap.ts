@@ -8,13 +8,21 @@ export const useAuthBootstrap = () => {
   const { setToken } = useAuthToken()
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search)
+    const hash = location.hash.startsWith('#') ? location.hash.slice(1) : location.hash
+    const params = new URLSearchParams(hash)
     const token = params.get('token')
     if (!token) return
 
     setToken(token)
     params.delete('token')
-    const nextSearch = params.toString()
-    navigate({ pathname: location.pathname, search: nextSearch ? `?${nextSearch}` : '' }, { replace: true })
-  }, [location.pathname, location.search, navigate, setToken])
+    const nextHash = params.toString()
+    navigate(
+      {
+        pathname: location.pathname,
+        search: location.search,
+        hash: nextHash ? `#${nextHash}` : '',
+      },
+      { replace: true },
+    )
+  }, [location.hash, location.pathname, location.search, navigate, setToken])
 }

@@ -10,11 +10,13 @@ import '@/styles/global.css'
 const bootstrapToken = () => {
   if (typeof window === 'undefined') return
   const url = new URL(window.location.href)
-  const token = url.searchParams.get('token')
+  const hashParams = new URLSearchParams(url.hash.replace(/^#/, ''))
+  const token = hashParams.get('token')
   if (token) {
     tokenStore.set(token)
-    url.searchParams.delete('token')
-    const nextUrl = `${url.pathname}${url.search}${url.hash}`
+    hashParams.delete('token')
+    const nextHash = hashParams.toString()
+    const nextUrl = `${url.pathname}${url.search}${nextHash ? `#${nextHash}` : ''}`
     window.history.replaceState({}, '', nextUrl)
   }
 }
