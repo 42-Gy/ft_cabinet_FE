@@ -80,6 +80,14 @@ export const MyLockersPage = () => {
     }
   }, [me?.autoExtensionEnabled])
 
+  useEffect(() => {
+    return () => {
+      if (returnPreviewUrl) URL.revokeObjectURL(returnPreviewUrl)
+      streamRef.current?.getTracks().forEach((track) => track.stop())
+      streamRef.current = null
+    }
+  }, [returnPreviewUrl])
+
   if (isLoading) return <LoadingState label="내 정보를 불러오는 중입니다." />
   if (isError) return <ErrorState onRetry={refetch} />
   if (!me) {
@@ -154,14 +162,6 @@ export const MyLockersPage = () => {
     })
   }
 
-  useEffect(() => {
-    return () => {
-      if (returnPreviewUrl) URL.revokeObjectURL(returnPreviewUrl)
-      streamRef.current?.getTracks().forEach((track) => track.stop())
-      streamRef.current = null
-    }
-  }, [])
-
   const handleStartCamera = async () => {
     try {
       setCameraError(null)
@@ -179,13 +179,15 @@ export const MyLockersPage = () => {
       streamRef.current = stream
       if (videoRef.current) {
         videoRef.current.srcObject = stream
-        await videoRef.current.play()
+        videoRef.current.play().catch(() => {
+          setCameraError('카메라 재생을 시작할 수 없습니다.')
+        })
       }
       setCameraActive(true)
-      setCameraStarting(false)
     } catch (error) {
       setCameraError('카메라 접근이 허용되지 않았습니다.')
       setCameraActive(false)
+    } finally {
       setCameraStarting(false)
     }
   }
