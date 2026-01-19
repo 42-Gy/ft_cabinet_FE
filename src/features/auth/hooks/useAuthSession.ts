@@ -9,7 +9,14 @@ export const useAuthSession = () => {
 
   const logout = async () => {
     try {
-      await apiClient.post('/v4/auth/logout', {})
+      await apiClient.post(
+        '/v4/auth/logout',
+        {},
+        {
+          withCredentials: true,
+          validateStatus: (status) => status === 200 || status === 302,
+        },
+      )
     } catch {
       // ignore logout failures
     } finally {
