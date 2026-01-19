@@ -5,7 +5,6 @@ import { env } from '@/libs/env'
 export const apiClient = axios.create({
   baseURL: env.apiBaseUrl,
   headers: {
-    'Content-Type': 'application/json',
   },
   withCredentials: true,
   timeout: 8000,
@@ -14,7 +13,6 @@ export const apiClient = axios.create({
 export const publicClient = axios.create({
   baseURL: env.apiBaseUrl,
   headers: {
-    'Content-Type': 'application/json',
   },
 })
 
@@ -27,9 +25,15 @@ const reissueClient = axios.create({
 })
 
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const headers = AxiosHeaders.from(config.headers ?? {})
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    headers.delete('Content-Type')
+  } else if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
+  }
+  config.headers = headers
   const token = tokenStore.get()
   if (token) {
-    const headers = AxiosHeaders.from(config.headers ?? {})
     if (!headers.has('Authorization')) {
       headers.set('Authorization', `Bearer ${token}`)
     }
