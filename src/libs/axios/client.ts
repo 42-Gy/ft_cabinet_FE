@@ -6,7 +6,6 @@ export const apiClient = axios.create({
   baseURL: env.apiBaseUrl,
   headers: {
     'Content-Type': 'application/json',
-    'ngrok-skip-browser-warning': 'true',
   },
   withCredentials: true,
   timeout: 8000,
@@ -16,7 +15,6 @@ export const publicClient = axios.create({
   baseURL: env.apiBaseUrl,
   headers: {
     'Content-Type': 'application/json',
-    'ngrok-skip-browser-warning': 'true',
   },
 })
 

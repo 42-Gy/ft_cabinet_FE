@@ -72,8 +72,8 @@ export const HomeOverview = () => {
       number,
       { available: number; full: number; broken: number; total: number }
     >()
-    const apply = (items?: CabinetSummary[]) => {
-      if (!items) return
+    const apply = (items?: CabinetSummary[] | unknown) => {
+      if (!Array.isArray(items)) return
       items.forEach((item) => {
         const id = extractSectionId(item.section)
         if (!id) return
@@ -93,8 +93,8 @@ export const HomeOverview = () => {
   const sectionSummaryLoading = summary2F.isLoading || summary3F.isLoading
   const sectionSummaryError = summary2F.isError || summary3F.isError
   const floorSummaries = useMemo(() => {
-    const toStats = (data?: CabinetSummary[] | null) => {
-      if (!data || data.length === 0) return null
+    const toStats = (data?: CabinetSummary[] | null | unknown) => {
+      if (!Array.isArray(data) || data.length === 0) return null
       return data.reduce(
         (acc, item) => {
           acc.total += item.total
