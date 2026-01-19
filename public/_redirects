@@ -1,1 +1,4 @@
+/api/* https://ft-cabinet-server-dpa9dkauhkdkajcr.koreacentral-01.azurewebsites.net/v4/:splat 200
+/oauth2/* https://ft-cabinet-server-dpa9dkauhkdkajcr.koreacentral-01.azurewebsites.net/oauth2/:splat 200
+/login/oauth2/* https://ft-cabinet-server-dpa9dkauhkdkajcr.koreacentral-01.azurewebsites.net/login/oauth2/:splat 200
 /* /index.html 200
