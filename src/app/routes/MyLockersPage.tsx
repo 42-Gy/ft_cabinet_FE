@@ -23,7 +23,7 @@ import {
   useDisclosure,
 } from '@chakra-ui/react'
 import { Link as RouterLink } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { PageHeader } from '@/components/molecules/PageHeader'
 import { LoadingState } from '@/components/molecules/LoadingState'
 import { ErrorState } from '@/components/molecules/ErrorState'
@@ -53,6 +53,10 @@ export const MyLockersPage = () => {
   const [forceReturn, setForceReturn] = useState(false)
   const [forceReason, setForceReason] = useState('')
   const [autoExtensionEnabled, setAutoExtensionEnabled] = useState(false)
+  const [cameraError, setCameraError] = useState<string | null>(null)
+  const [cameraActive, setCameraActive] = useState(false)
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
 
   const cardBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200')
@@ -147,6 +151,57 @@ export const MyLockersPage = () => {
     })
   }
 
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach((track) => track.stop())
+      streamRef.current = null
+    }
+  }, [])
+
+  const handleStartCamera = async () => {
+    try {
+      setCameraError(null)
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false,
+      })
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        await videoRef.current.play()
+      }
+      setCameraActive(true)
+    } catch (error) {
+      setCameraError('카메라 접근이 허용되지 않았습니다.')
+      setCameraActive(false)
+    }
+  }
+
+  const handleStopCamera = () => {
+    streamRef.current?.getTracks().forEach((track) => track.stop())
+    streamRef.current = null
+    if (videoRef.current) {
+      videoRef.current.srcObject = null
+    }
+    setCameraActive(false)
+  }
+
+  const handleCapturePhoto = () => {
+    if (!videoRef.current) return
+    const video = videoRef.current
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    canvas.toBlob((blob) => {
+      if (!blob) return
+      const file = new File([blob], `return-${Date.now()}.jpg`, { type: 'image/jpeg' })
+      setReturnFile(file)
+    }, 'image/jpeg', 0.9)
+  }
+
   return (
     <Stack spacing={8}>
       <PageHeader
@@ -214,6 +269,32 @@ export const MyLockersPage = () => {
               <Stack spacing={3}>
                 <FormControl>
                   <FormLabel>사물함 내부 사진</FormLabel>
+                  <Stack spacing={2} mb={2} align="flex-start">
+                    <Button size="sm" onClick={cameraActive ? handleStopCamera : handleStartCamera}>
+                      {cameraActive ? '카메라 끄기' : '카메라 켜기'}
+                    </Button>
+                    {cameraError && (
+                      <Text fontSize="sm" color="red.400">
+                        {cameraError}
+                      </Text>
+                    )}
+                    {cameraActive && (
+                      <Stack spacing={2} w="full">
+                        <Box
+                          borderWidth={1}
+                          borderColor={borderColor}
+                          borderRadius="md"
+                          overflow="hidden"
+                          bg="black"
+                        >
+                          <video ref={videoRef} style={{ width: '100%' }} playsInline />
+                        </Box>
+                        <Button size="sm" colorScheme="brand" onClick={handleCapturePhoto}>
+                          사진 찍기
+                        </Button>
+                      </Stack>
+                    )}
+                  </Stack>
                   <Input
                     type="file"
                     accept="image/*"
