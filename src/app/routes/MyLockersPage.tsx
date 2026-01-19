@@ -161,6 +161,10 @@ export const MyLockersPage = () => {
   const handleStartCamera = async () => {
     try {
       setCameraError(null)
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraError('이 브라우저에서는 카메라를 사용할 수 없습니다.')
+        return
+      }
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: 'environment' } },
         audio: false,
@@ -190,6 +194,10 @@ export const MyLockersPage = () => {
     if (!videoRef.current) return
     const video = videoRef.current
     const canvas = document.createElement('canvas')
+    if (!video.videoWidth || !video.videoHeight) {
+      setCameraError('카메라가 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.')
+      return
+    }
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
     const ctx = canvas.getContext('2d')
