@@ -58,6 +58,7 @@ const statusBadgeMeta: Record<
 
 export const LockersPage = () => {
   const { data: me } = useMeQuery()
+  const isLoggedIn = Boolean(me)
   const [activeFloor, setActiveFloor] = useState<number | null>(lockerFloors[0] ?? null)
   const [activeSectionId, setActiveSectionId] = useState<number | null>(null)
   const [viewMode, setViewMode] = useState<'map' | 'detail'>('map')
@@ -161,7 +162,6 @@ export const LockersPage = () => {
   const cabinetsQuery = useCabinetsQuery({
     floor: activeFloor ?? undefined,
     enabled: Boolean(activeFloor !== null && viewMode === 'detail'),
-    requiresAuth: true,
   })
 
   const cabinetsForSection = useMemo(() => {
@@ -240,9 +240,7 @@ export const LockersPage = () => {
 
   const effectiveSelectedStatus = selectedCabinet ? getEffectiveStatus(selectedCabinet) : null
 
-  const canRentSelected = Boolean(
-    token && selectedCabinet && effectiveSelectedStatus === 'AVAILABLE',
-  )
+  const canRentSelected = Boolean(selectedCabinet && isLoggedIn && effectiveSelectedStatus === 'AVAILABLE')
 
   const handleSectionSelect = (section: LockerSectionMeta) => {
     setActiveFloor(section.floor)
@@ -329,20 +327,20 @@ export const LockersPage = () => {
             )}
           </Stack>
           <Divider />
-          <Button
-            colorScheme="brand"
-            isDisabled={!token || detail.status !== 'AVAILABLE'}
-            isLoading={rentMutation.isPending && rentMutation.variables === detail.visibleNum}
-            onClick={() =>
-              token &&
-              detail.status === 'AVAILABLE' &&
-              rentMutation.mutate(detail.visibleNum, {
-                onSuccess: () => markCabinetRented(detail.visibleNum),
-              })
-            }
-          >
-            {token ? '이 사물함 대여하기' : '로그인 후 대여 가능'}
-          </Button>
+            <Button
+              colorScheme="brand"
+              isDisabled={!isLoggedIn || detail.status !== 'AVAILABLE'}
+              isLoading={rentMutation.isPending && rentMutation.variables === detail.visibleNum}
+              onClick={() =>
+                isLoggedIn &&
+                detail.status === 'AVAILABLE' &&
+                rentMutation.mutate(detail.visibleNum, {
+                  onSuccess: () => markCabinetRented(detail.visibleNum),
+                })
+              }
+            >
+              {isLoggedIn ? '이 사물함 대여하기' : '로그인 후 대여 가능'}
+            </Button>
         </Stack>
       )
     }
@@ -375,7 +373,7 @@ export const LockersPage = () => {
           description="SUBAK의 수박 지도에서 위치를 선택하고, 상세 화면에서 실시간 상태를 확인한 뒤 대여하세요."
         />
 
-        {!token && (
+        {!isLoggedIn && (
           <Alert status="info" borderRadius="md">
             <AlertIcon />
             로그인 후 대여 버튼이 활성화됩니다.
@@ -586,7 +584,7 @@ export const LockersPage = () => {
                       }
                       onClick={handleRentSelectedCabinet}
                     >
-                      {token ? '이 사물함 대여하기' : '로그인 후 대여 가능'}
+                      {isLoggedIn ? '이 사물함 대여하기' : '로그인 후 대여 가능'}
                     </Button>
                   </Stack>
                 ) : (

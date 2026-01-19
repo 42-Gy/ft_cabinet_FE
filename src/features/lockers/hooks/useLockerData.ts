@@ -49,7 +49,6 @@ const cabinetDetailKeys = {
 interface FloorQueryOptions {
   floor?: number | null
   enabled?: boolean
-  requiresAuth?: boolean
 }
 
 const getFloorKey = (floor?: number | null) =>
@@ -58,7 +57,6 @@ const getFloorKey = (floor?: number | null) =>
 export const useCabinetsQuery = ({
   floor,
   enabled = true,
-  requiresAuth = true,
 }: FloorQueryOptions) => {
   return useQuery({
     queryKey: cabinetKeys.list(getFloorKey(floor)),
@@ -66,7 +64,7 @@ export const useCabinetsQuery = ({
       if (typeof floor !== 'number') {
         throw new Error('floor 값이 필요합니다.')
       }
-      return getCabinets(floor, { publicAccess: !requiresAuth })
+      return getCabinets(floor, { publicAccess: false })
     },
     enabled: Boolean(typeof floor === 'number' && enabled),
   })
@@ -75,7 +73,6 @@ export const useCabinetsQuery = ({
 export const useCabinetSummaryQuery = ({
   floor,
   enabled = true,
-  requiresAuth = true,
 }: FloorQueryOptions) => {
   return useQuery({
     queryKey: cabinetSummaryKeys.list(getFloorKey(floor)),

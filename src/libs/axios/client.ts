@@ -34,7 +34,7 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config
 })
 
-let refreshPromise: Promise<string | null> | null = null
+let refreshPromise: Promise<boolean | null> | null = null
 
 const reissueAccessToken = async () => {
   await reissueClient.post('/v4/auth/reissue')

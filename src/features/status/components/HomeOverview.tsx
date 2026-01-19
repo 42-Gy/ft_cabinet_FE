@@ -55,8 +55,8 @@ const guideCards = [
 export const HomeOverview = () => {
   const guideModal = useDisclosure()
   const summaryQuery = useCabinetSummaryAllQuery()
-  const summary2F = useCabinetSummaryQuery({ floor: 2, enabled: true, requiresAuth: false })
-  const summary3F = useCabinetSummaryQuery({ floor: 3, enabled: true, requiresAuth: false })
+  const summary2F = useCabinetSummaryQuery({ floor: 2, enabled: true })
+  const summary3F = useCabinetSummaryQuery({ floor: 3, enabled: true })
   const highlightBg = useColorModeValue('white', 'gray.800')
   const highlightBorder = useColorModeValue('gray.100', 'whiteAlpha.200')
   const sectionText = useColorModeValue('gray.600', 'gray.300')
