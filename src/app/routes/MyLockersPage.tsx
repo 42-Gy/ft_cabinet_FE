@@ -172,11 +172,16 @@ export const MyLockersPage = () => {
       setCameraError(null)
       setCameraReady(false)
       setCameraStarting(true)
+      // Debug logging to trace camera flow in production
+      // eslint-disable-next-line no-console
+      console.info('[Camera] start requested')
       if (cameraTimeoutRef.current) {
         clearTimeout(cameraTimeoutRef.current)
         cameraTimeoutRef.current = null
       }
       if (!navigator.mediaDevices?.getUserMedia) {
+        // eslint-disable-next-line no-console
+        console.warn('[Camera] mediaDevices.getUserMedia not available')
         setCameraError('이 브라우저에서는 카메라를 사용할 수 없습니다.')
         setCameraStarting(false)
         return
@@ -186,20 +191,34 @@ export const MyLockersPage = () => {
         audio: false,
       })
       streamRef.current = stream
+      // eslint-disable-next-line no-console
+      console.info('[Camera] stream acquired', {
+        tracks: stream.getTracks().map((track) => ({
+          kind: track.kind,
+          label: track.label,
+          readyState: track.readyState,
+        })),
+      })
       if (videoRef.current) {
         videoRef.current.srcObject = stream
-        videoRef.current.play().catch(() => {
+        videoRef.current.play().catch((error) => {
+          // eslint-disable-next-line no-console
+          console.error('[Camera] video play failed', error)
           setCameraError('카메라 재생을 시작할 수 없습니다.')
         })
       }
       setCameraActive(true)
       cameraTimeoutRef.current = setTimeout(() => {
         if (!cameraReady) {
+          // eslint-disable-next-line no-console
+          console.warn('[Camera] ready timeout')
           setCameraError('카메라 준비가 지연되고 있습니다. 다시 시도해 주세요.')
           setCameraStarting(false)
         }
       }, 3000)
     } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('[Camera] getUserMedia failed', error)
       setCameraError('카메라 접근이 허용되지 않았습니다.')
       setCameraActive(false)
     } finally {
@@ -346,6 +365,11 @@ export const MyLockersPage = () => {
                             muted
                             autoPlay
                             onLoadedMetadata={() => {
+                              // eslint-disable-next-line no-console
+                              console.info('[Camera] loaded metadata', {
+                                width: videoRef.current?.videoWidth,
+                                height: videoRef.current?.videoHeight,
+                              })
                               setCameraReady(true)
                               if (cameraTimeoutRef.current) {
                                 clearTimeout(cameraTimeoutRef.current)
@@ -353,6 +377,8 @@ export const MyLockersPage = () => {
                               }
                             }}
                             onCanPlay={() => {
+                              // eslint-disable-next-line no-console
+                              console.info('[Camera] can play')
                               setCameraReady(true)
                               if (cameraTimeoutRef.current) {
                                 clearTimeout(cameraTimeoutRef.current)
