@@ -70,11 +70,11 @@ export const AdminDashboard = () => {
     if (!statsQuery.data) return []
     const stats = statsQuery.data
     return [
-      { label: '전체 유저', value: stats.totalUserCount.toLocaleString() },
-      { label: '전체 사물함', value: stats.totalCabinetCount.toLocaleString() },
-      { label: '대여 중', value: stats.activeLentCount.toLocaleString() },
-      { label: '점검 중', value: stats.brokenCabinetCount.toLocaleString() },
-      { label: '패널티 유저', value: stats.bannedUserCount.toLocaleString() },
+      { label: '전체 유저', value: Number(stats.totalUserCount ?? 0).toLocaleString() },
+      { label: '전체 사물함', value: Number(stats.totalCabinetCount ?? 0).toLocaleString() },
+      { label: '대여 중', value: Number(stats.activeLentCount ?? 0).toLocaleString() },
+      { label: '점검 중', value: Number(stats.brokenCabinetCount ?? 0).toLocaleString() },
+      { label: '패널티 유저', value: Number(stats.bannedUserCount ?? 0).toLocaleString() },
     ]
   }, [statsQuery.data])
 
@@ -150,9 +150,9 @@ export const AdminDashboard = () => {
                 <Text color={mutedText}>{userData.email}</Text>
               </Stack>
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                <InfoItem label="코인" value={`${userData.coin.toLocaleString()} 개`} />
-                <InfoItem label="패널티 일수" value={`${userData.penaltyDays} 일`} />
-                <InfoItem label="이번 달 학습 시간" value={`${userData.monthlyLogtime} 분`} />
+                <InfoItem label="코인" value={`${Number(userData.coin ?? 0).toLocaleString()} 개`} />
+                <InfoItem label="패널티 일수" value={`${userData.penaltyDays ?? 0} 일`} />
+                <InfoItem label="이번 달 학습 시간" value={`${userData.monthlyLogtime ?? 0} 분`} />
                 <InfoItem
                   label="대여 중 사물함"
                   value={

@@ -167,13 +167,13 @@ export const MyLockersPage = () => {
               {me.name} · {me.email}
             </Text>
             <Badge colorScheme="purple" w="fit-content">
-              코인 {me.coin.toLocaleString()}개
+              코인 {(me.coin ?? 0).toLocaleString()}개
             </Badge>
             <Text fontSize="sm" color={textMuted}>
-              이번 달 로그타임: {me.monthlyLogtime.toLocaleString()}분
+              이번 달 로그타임: {(me.monthlyLogtime ?? 0).toLocaleString()}분
             </Text>
             <Text fontSize="sm" color={textMuted}>
-              패널티 일수: {me.penaltyDays}일
+              패널티 일수: {me.penaltyDays ?? 0}일
             </Text>
           </Stack>
 

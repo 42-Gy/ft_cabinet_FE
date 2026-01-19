@@ -34,7 +34,7 @@ export const StorePage = () => {
       <Box borderWidth={1} borderRadius="xl" bg={cardBg} p={6} borderColor={borderColor} shadow="sm">
         <Text fontWeight="bold">보유 코인</Text>
         <Text fontSize="2xl" fontWeight="black">
-          {me?.coin.toLocaleString() ?? '-'} 개
+          {typeof me?.coin === 'number' ? me.coin.toLocaleString() : '-'} 개
         </Text>
       </Box>
 

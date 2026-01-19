@@ -29,7 +29,10 @@ export const AttendancePage = () => {
   const attendanceMutation = useAttendanceMutation()
   const [current] = useState(() => new Date())
 
-  const attendanceSet = useMemo(() => new Set(data ?? []), [data])
+  const attendanceSet = useMemo(
+    () => new Set(Array.isArray(data) ? data : []),
+    [data],
+  )
   const todayKey = formatDateKey(new Date())
   const hasTodayAttendance = attendanceSet.has(todayKey)
 
@@ -55,7 +58,7 @@ export const AttendancePage = () => {
   if (isLoading) return <LoadingState label="출석 기록을 불러오는 중입니다." />
   if (isError) return <ErrorState onRetry={refetch} />
 
-  const hasRecords = (data ?? []).length > 0
+  const hasRecords = Array.isArray(data) && data.length > 0
 
   return (
     <Stack spacing={6}>

@@ -1,4 +1,5 @@
 import { apiClient, publicClient } from '@/libs/axios/client'
+import { coerceArray, unwrapApiResponse } from '@/libs/axios/unwrap'
 import { resolveCabinetId } from '@/features/lockers/libs/cabinetIdResolver'
 import type {
   Cabinet,
@@ -32,26 +33,36 @@ export const getCabinets = async (
   options?: CabinetRequestOptions,
 ): Promise<Cabinet[]> => {
   const client = options?.publicAccess ? publicClient : apiClient
-  const { data } = await client.get<Cabinet[]>('/v4/cabinets', { params: { floor } })
-  return data
+  const { data } = await client.get('/v4/cabinets', { params: { floor } })
+  return coerceArray<Cabinet>(unwrapApiResponse<unknown>(data))
 }
 
 export const getCabinetSummary = async (floor: number): Promise<CabinetSummary[]> => {
-  const { data } = await apiClient.get<CabinetSummary[]>('/v4/cabinets/status-summary', {
+  const { data } = await apiClient.get('/v4/cabinets/status-summary', {
     params: { floor },
   })
-  return data
+  return coerceArray<CabinetSummary>(unwrapApiResponse<unknown>(data))
 }
 
 export const getCabinetSummaryAll = async (): Promise<CabinetSummaryAll> => {
-  const { data } = await publicClient.get<CabinetSummaryAll>('/v4/cabinets/status-summary/all')
-  return data
+  const { data } = await publicClient.get('/v4/cabinets/status-summary/all')
+  const payload = unwrapApiResponse<unknown>(data)
+  if (!payload || typeof payload !== 'object') {
+    return { totalCounts: 0, totalAvailable: 0, totalFull: 0, totalBroken: 0 }
+  }
+  const summary = payload as Partial<CabinetSummaryAll>
+  return {
+    totalCounts: summary.totalCounts ?? 0,
+    totalAvailable: summary.totalAvailable ?? 0,
+    totalFull: summary.totalFull ?? 0,
+    totalBroken: summary.totalBroken ?? 0,
+  }
 }
 
 export const getCabinetDetail = async (cabinetId: number): Promise<CabinetDetail> => {
   const resolvedId = resolveCabinetId(cabinetId)
-  const { data } = await publicClient.get<CabinetDetail>(`/v4/cabinets/${resolvedId}`)
-  return data
+  const { data } = await publicClient.get(`/v4/cabinets/${resolvedId}`)
+  return unwrapApiResponse<CabinetDetail>(data)
 }
 
 export const rentCabinet = async (cabinetId: number): Promise<LockerActionResult> => {
