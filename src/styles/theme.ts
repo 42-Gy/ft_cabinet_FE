@@ -44,8 +44,10 @@ export const theme = extendTheme({
     }),
   },
   fonts: {
-    heading: "'Pretendard Variable', 'Spoqa Han Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    body: "'Pretendard Variable', 'Spoqa Han Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    heading:
+      "'BMJUA', 'Pretendard Variable', 'Spoqa Han Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    body:
+      "'BMJUA', 'Pretendard Variable', 'Spoqa Han Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
   },
   components: {
     Button: {

@@ -18,12 +18,12 @@ import { env } from '@/libs/env'
 import { useAuthSession } from '@/features/auth/hooks/useAuthSession'
 
 const routes = [
-  { to: '/lockers', label: 'Lockers' },
-  { to: '/my/lockers', label: 'My Lockers' },
-  { to: '/attendance', label: 'Attendance' },
-  { to: '/store', label: 'Store' },
-  { to: '/admin', label: 'Admin' },
-  { to: '/policy', label: 'Policy' },
+  { to: '/lockers', label: '사물함' },
+  { to: '/my/lockers', label: '내 사물함' },
+  { to: '/attendance', label: '출석' },
+  { to: '/store', label: '상점' },
+  { to: '/admin', label: '관리자' },
+  { to: '/policy', label: '정책' },
 ]
 
 export const AppLayout = () => {
