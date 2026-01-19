@@ -3,14 +3,18 @@ import { useState } from 'react'
 import { PageHeader } from '@/components/molecules/PageHeader'
 import { EmptyState } from '@/components/molecules/EmptyState'
 import { LoadingState } from '@/components/molecules/LoadingState'
+import { ErrorState } from '@/components/molecules/ErrorState'
 import { useAuthToken } from '@/features/auth/hooks/useAuthToken'
 import { useMeQuery } from '@/features/users/hooks/useMeQuery'
 import { useBuyItemMutation } from '@/features/lockers/hooks/useLockerData'
-import { STORE_ITEMS } from '@/features/store/data/items'
+import { STORE_ITEM_META_BY_TYPE } from '@/features/store/data/items'
+import { useStoreItemsQuery } from '@/features/store/hooks/useStoreItems'
+import type { StoreItemResponse } from '@/features/store/types'
 
 export const StorePage = () => {
   const { token } = useAuthToken()
   const { data: me, isLoading } = useMeQuery()
+  const itemsQuery = useStoreItemsQuery(Boolean(token))
   const buyMutation = useBuyItemMutation()
   const [pendingItemId, setPendingItemId] = useState<number | null>(null)
   const cardBg = useColorModeValue('white', 'gray.800')
@@ -23,7 +27,32 @@ export const StorePage = () => {
     )
   }
 
-  if (isLoading) return <LoadingState label="스토어 정보를 불러오는 중입니다." />
+  if (isLoading || itemsQuery.isLoading) {
+    return <LoadingState label="스토어 정보를 불러오는 중입니다." />
+  }
+  if (itemsQuery.isError) {
+    return <ErrorState onRetry={itemsQuery.refetch} />
+  }
+
+  const storeItems = itemsQuery.data ?? []
+  if (storeItems.length === 0) {
+    return <EmptyState title="표시할 아이템이 없습니다" description="잠시 후 다시 시도해 주세요." />
+  }
+
+  const toDisplayItem = (item: StoreItemResponse) => {
+    const meta = STORE_ITEM_META_BY_TYPE[item.type]
+    const title = meta?.title ?? item.name
+    const description = item.description || `${title} 아이템입니다.`
+    const priceLabel = `${Number(item.price ?? 0).toLocaleString()} 수박씨`
+    return {
+      id: item.itemId,
+      title,
+      description,
+      priceLabel,
+      icon: meta?.icon,
+      disabled: meta?.disabled,
+    }
+  }
 
   return (
     <Stack spacing={8}>
@@ -39,25 +68,28 @@ export const StorePage = () => {
       </Box>
 
       <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-        {STORE_ITEMS.map((item) => {
+        {storeItems.map((rawItem) => {
+          const item = toDisplayItem(rawItem)
           const isDisabled = Boolean(item.disabled)
-          const isLoading = pendingItemId === item.itemId && buyMutation.isPending
+          const isLoading = pendingItemId === item.id && buyMutation.isPending
           return (
             <Box
-              key={item.key}
+              key={item.id}
               borderWidth={1}
               borderColor={borderColor}
               borderRadius="xl"
-            p={6}
-            bg={cardBg}
-            shadow="sm"
+              p={6}
+              bg={cardBg}
+              shadow="sm"
             >
               <Stack spacing={3}>
-                <Icon
-                  as={item.icon}
-                  boxSize={12}
-                  color={isDisabled ? 'gray.400' : 'brand.500'}
-                />
+                {item.icon && (
+                  <Icon
+                    as={item.icon}
+                    boxSize={12}
+                    color={isDisabled ? 'gray.400' : 'brand.500'}
+                  />
+                )}
                 <Text fontSize="xl" fontWeight="bold">
                   {item.title}
                 </Text>
@@ -70,8 +102,8 @@ export const StorePage = () => {
                   variant={isDisabled ? 'outline' : 'solid'}
                   onClick={() => {
                     if (isDisabled) return
-                    setPendingItemId(item.itemId)
-                    buyMutation.mutate(item.itemId, {
+                    setPendingItemId(item.id)
+                    buyMutation.mutate(item.id, {
                       onSettled: () => setPendingItemId(null),
                     })
                   }}

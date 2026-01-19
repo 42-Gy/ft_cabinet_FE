@@ -5,6 +5,7 @@ import {
   RiTicket2Line,
   RiTimerLine,
 } from 'react-icons/ri'
+import type { StoreItemType } from '@/features/store/types'
 
 export const STORE_ITEM_IDS = {
   RENT: 1,
@@ -60,3 +61,23 @@ export const STORE_ITEMS: StoreItem[] = [
     icon: RiShieldCheckLine,
   },
 ]
+
+export const STORE_ITEM_META_BY_TYPE: Record<StoreItemType, { title: string; icon: IconType; disabled?: boolean }> = {
+  LENT: {
+    title: '대여권',
+    icon: RiTicket2Line,
+    disabled: true,
+  },
+  EXTENSION: {
+    title: '연장권',
+    icon: RiTimerLine,
+  },
+  SWAP: {
+    title: '이사권',
+    icon: RiExchangeLine,
+  },
+  PENALTY_EXEMPTION: {
+    title: '패널티 감면권',
+    icon: RiShieldCheckLine,
+  },
+}
