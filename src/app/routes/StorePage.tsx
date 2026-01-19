@@ -4,7 +4,6 @@ import { PageHeader } from '@/components/molecules/PageHeader'
 import { EmptyState } from '@/components/molecules/EmptyState'
 import { LoadingState } from '@/components/molecules/LoadingState'
 import { ErrorState } from '@/components/molecules/ErrorState'
-import { useAuthToken } from '@/features/auth/hooks/useAuthToken'
 import { useMeQuery } from '@/features/users/hooks/useMeQuery'
 import { useBuyItemMutation } from '@/features/lockers/hooks/useLockerData'
 import { STORE_ITEM_META_BY_TYPE } from '@/features/store/data/items'
@@ -12,16 +11,19 @@ import { useStoreItemsQuery } from '@/features/store/hooks/useStoreItems'
 import type { StoreItemResponse } from '@/features/store/types'
 
 export const StorePage = () => {
-  const { token } = useAuthToken()
-  const { data: me, isLoading } = useMeQuery()
-  const itemsQuery = useStoreItemsQuery(Boolean(token))
+  const { data: me, isLoading, isError, refetch } = useMeQuery()
+  const itemsQuery = useStoreItemsQuery(Boolean(me))
   const buyMutation = useBuyItemMutation()
   const [pendingItemId, setPendingItemId] = useState<number | null>(null)
   const cardBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200')
   const textMuted = useColorModeValue('gray.600', 'gray.300')
 
-  if (!token) {
+  if (isError) {
+    return <ErrorState onRetry={refetch} />
+  }
+
+  if (!me) {
     return (
       <EmptyState title="로그인이 필요합니다" description="헤더의 로그인 버튼을 눌러 42 OAuth로 이동해 주세요." />
     )

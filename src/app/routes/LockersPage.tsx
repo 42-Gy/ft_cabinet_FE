@@ -27,7 +27,6 @@ import { PageHeader } from '@/components/molecules/PageHeader'
 import { LoadingState } from '@/components/molecules/LoadingState'
 import { ErrorState } from '@/components/molecules/ErrorState'
 import { EmptyState } from '@/components/molecules/EmptyState'
-import { useAuthToken } from '@/features/auth/hooks/useAuthToken'
 import {
   useCabinetDetailQuery,
   useCabinetsQuery,
@@ -58,7 +57,6 @@ const statusBadgeMeta: Record<
 }
 
 export const LockersPage = () => {
-  const { token } = useAuthToken()
   const { data: me } = useMeQuery()
   const [activeFloor, setActiveFloor] = useState<number | null>(lockerFloors[0] ?? null)
   const [activeSectionId, setActiveSectionId] = useState<number | null>(null)
@@ -163,7 +161,7 @@ export const LockersPage = () => {
   const cabinetsQuery = useCabinetsQuery({
     floor: activeFloor ?? undefined,
     enabled: Boolean(activeFloor !== null && viewMode === 'detail'),
-    requiresAuth: Boolean(token),
+    requiresAuth: true,
   })
 
   const cabinetsForSection = useMemo(() => {

@@ -15,8 +15,7 @@ import { Link as RouterLink, NavLink, Outlet } from 'react-router-dom'
 import { HiOutlineMenu, HiOutlineX } from 'react-icons/hi'
 import { FiMoon, FiSun } from 'react-icons/fi'
 import { env } from '@/libs/env'
-import { useAuthBootstrap } from '@/features/auth/hooks/useAuthBootstrap'
-import { useAuthToken } from '@/features/auth/hooks/useAuthToken'
+import { useAuthSession } from '@/features/auth/hooks/useAuthSession'
 
 const routes = [
   { to: '/lockers', label: 'Lockers' },
@@ -29,8 +28,7 @@ const routes = [
 
 export const AppLayout = () => {
   const { isOpen, onToggle, onClose } = useDisclosure()
-  const { token, logout } = useAuthToken()
-  useAuthBootstrap()
+  const { isAuthenticated, logout } = useAuthSession()
   const { colorMode, toggleColorMode } = useColorMode()
   const headerBg = useColorModeValue('white', 'gray.900')
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200')
@@ -45,7 +43,7 @@ export const AppLayout = () => {
     }
   }
 
-  const isLoggedIn = Boolean(token)
+  const isLoggedIn = isAuthenticated
 
   const renderLinks = (direction: 'row' | 'column') => (
     <Stack

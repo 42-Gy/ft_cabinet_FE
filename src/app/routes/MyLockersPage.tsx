@@ -28,7 +28,6 @@ import { PageHeader } from '@/components/molecules/PageHeader'
 import { LoadingState } from '@/components/molecules/LoadingState'
 import { ErrorState } from '@/components/molecules/ErrorState'
 import { EmptyState } from '@/components/molecules/EmptyState'
-import { useAuthToken } from '@/features/auth/hooks/useAuthToken'
 import { useMeQuery } from '@/features/users/hooks/useMeQuery'
 import {
   useAutoExtensionMutation,
@@ -41,7 +40,6 @@ import { formatDate } from '@/utils/date'
 import type { UserItemType } from '@/types/user'
 
 export const MyLockersPage = () => {
-  const { token } = useAuthToken()
   const { data: me, isLoading, isError, refetch } = useMeQuery()
   const returnMutation = useReturnCabinetMutation()
   const extendMutation = useExtendTicketMutation()
@@ -75,7 +73,9 @@ export const MyLockersPage = () => {
     }
   }, [me?.autoExtensionEnabled])
 
-  if (!token) {
+  if (isLoading) return <LoadingState label="내 정보를 불러오는 중입니다." />
+  if (isError) return <ErrorState onRetry={refetch} />
+  if (!me) {
     return (
       <EmptyState
         title="로그인이 필요합니다"
@@ -83,9 +83,6 @@ export const MyLockersPage = () => {
       />
     )
   }
-
-  if (isLoading) return <LoadingState label="내 정보를 불러오는 중입니다." />
-  if (isError || !me) return <ErrorState onRetry={refetch} />
 
   const hasLocker = Boolean(me.lentCabinetId)
 

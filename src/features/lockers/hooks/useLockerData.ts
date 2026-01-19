@@ -15,7 +15,6 @@ import {
   useSwapTicket,
   type ReturnCabinetPayload,
 } from '@/features/lockers/api/lockers'
-import { useAuthToken } from '@/features/auth/hooks/useAuthToken'
 import { meQueryKeys } from '@/features/users/hooks/useMeQuery'
 import type { LockerActionResult } from '@/types/locker'
 
@@ -61,9 +60,6 @@ export const useCabinetsQuery = ({
   enabled = true,
   requiresAuth = true,
 }: FloorQueryOptions) => {
-  const { token } = useAuthToken()
-  const allowWithoutToken = !requiresAuth
-
   return useQuery({
     queryKey: cabinetKeys.list(getFloorKey(floor)),
     queryFn: () => {
@@ -72,7 +68,7 @@ export const useCabinetsQuery = ({
       }
       return getCabinets(floor, { publicAccess: !requiresAuth })
     },
-    enabled: Boolean((allowWithoutToken || token) && typeof floor === 'number' && enabled),
+    enabled: Boolean(typeof floor === 'number' && enabled),
   })
 }
 
@@ -81,9 +77,6 @@ export const useCabinetSummaryQuery = ({
   enabled = true,
   requiresAuth = true,
 }: FloorQueryOptions) => {
-  const { token } = useAuthToken()
-  const allowWithoutToken = !requiresAuth
-
   return useQuery({
     queryKey: cabinetSummaryKeys.list(getFloorKey(floor)),
     queryFn: () => {
@@ -92,7 +85,7 @@ export const useCabinetSummaryQuery = ({
       }
       return getCabinetSummary(floor)
     },
-    enabled: Boolean((allowWithoutToken || token) && typeof floor === 'number' && enabled),
+    enabled: Boolean(typeof floor === 'number' && enabled),
   })
 }
 
@@ -126,14 +119,10 @@ const useInvalidateLockerQueries = () => {
 
 export const useRentCabinetMutation = () => {
   const toast = useToast()
-  const { token } = useAuthToken()
   const invalidate = useInvalidateLockerQueries()
 
   return useMutation<LockerActionResult, unknown, number>({
     mutationFn: async (cabinetId: number) => {
-      if (!token) {
-        throw new Error('로그인이 필요합니다.')
-      }
       return rentCabinet(cabinetId)
     },
     onSuccess: (result) => {
@@ -148,14 +137,10 @@ export const useRentCabinetMutation = () => {
 
 export const useReturnCabinetMutation = () => {
   const toast = useToast()
-  const { token } = useAuthToken()
   const invalidate = useInvalidateLockerQueries()
 
   return useMutation<LockerActionResult, unknown, ReturnCabinetPayload>({
     mutationFn: async (payload) => {
-      if (!token) {
-        throw new Error('로그인이 필요합니다.')
-      }
       return returnCabinet(payload)
     },
     onSuccess: (result) => {
@@ -170,14 +155,10 @@ export const useReturnCabinetMutation = () => {
 
 export const useBuyItemMutation = () => {
   const toast = useToast()
-  const { token } = useAuthToken()
   const invalidate = useInvalidateLockerQueries()
 
   return useMutation<LockerActionResult, unknown, number>({
     mutationFn: async (itemId: number) => {
-      if (!token) {
-        throw new Error('로그인이 필요합니다.')
-      }
       return buyStoreItem(itemId)
     },
     onSuccess: (result) => {
@@ -199,12 +180,10 @@ export const lockerQueryKeys = {
 
 export const useExtendTicketMutation = () => {
   const toast = useToast()
-  const { token } = useAuthToken()
   const invalidate = useInvalidateLockerQueries()
 
   return useMutation<LockerActionResult>({
     mutationFn: async () => {
-      if (!token) throw new Error('로그인이 필요합니다.')
       return useExtensionTicket()
     },
     onSuccess: (result) => {
@@ -217,12 +196,10 @@ export const useExtendTicketMutation = () => {
 
 export const useSwapTicketMutation = () => {
   const toast = useToast()
-  const { token } = useAuthToken()
   const invalidate = useInvalidateLockerQueries()
 
   return useMutation<LockerActionResult, unknown, number>({
     mutationFn: async (targetCabinetId: number) => {
-      if (!token) throw new Error('로그인이 필요합니다.')
       return useSwapTicket(targetCabinetId)
     },
     onSuccess: (result) => {
@@ -235,12 +212,10 @@ export const useSwapTicketMutation = () => {
 
 export const usePenaltyTicketMutation = () => {
   const toast = useToast()
-  const { token } = useAuthToken()
   const invalidate = useInvalidateLockerQueries()
 
   return useMutation<LockerActionResult>({
     mutationFn: async () => {
-      if (!token) throw new Error('로그인이 필요합니다.')
       return usePenaltyTicket()
     },
     onSuccess: (result) => {
@@ -253,12 +228,10 @@ export const usePenaltyTicketMutation = () => {
 
 export const useAutoExtensionMutation = () => {
   const toast = useToast()
-  const { token } = useAuthToken()
   const invalidate = useInvalidateLockerQueries()
 
   return useMutation<LockerActionResult, unknown, boolean>({
     mutationFn: async (enabled) => {
-      if (!token) throw new Error('로그인이 필요합니다.')
       return updateAutoExtension(enabled)
     },
     onSuccess: (result) => {

@@ -1,5 +1,4 @@
 import axios, { AxiosError, AxiosHeaders, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
-import { tokenStore } from '@/libs/auth/tokenStore'
 import { env } from '@/libs/env'
 
 export const apiClient = axios.create({
@@ -32,32 +31,21 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     headers.set('Content-Type', 'application/json')
   }
   config.headers = headers
-  const token = tokenStore.get()
-  if (token) {
-    if (!headers.has('Authorization')) {
-      headers.set('Authorization', `Bearer ${token}`)
-    }
-    config.headers = headers
-  }
   return config
 })
 
 let refreshPromise: Promise<string | null> | null = null
 
 const reissueAccessToken = async () => {
-  const { data } = await reissueClient.post<{ accessToken: string }>('/v4/auth/reissue')
-  return data.accessToken
+  await reissueClient.post('/v4/auth/reissue')
+  return true
 }
 
 const enqueueRefresh = () => {
   if (!refreshPromise) {
     refreshPromise = reissueAccessToken()
-      .then((newToken) => {
-        tokenStore.set(newToken)
-        return newToken
-      })
+      .then(() => true)
       .catch((error) => {
-        tokenStore.clear()
         if (import.meta.env.DEV) {
           // eslint-disable-next-line no-console
           console.error('[API] token refresh failed', error)
@@ -81,13 +69,13 @@ apiClient.interceptors.response.use(
     const { response, config } = error
     const originalRequest = config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined
 
-    if (response?.status === 401 && originalRequest && !originalRequest._retry) {
+    const skipReissue =
+      Boolean(originalRequest?.headers && 'X-Skip-Reissue' in originalRequest.headers)
+
+    if (response?.status === 401 && originalRequest && !originalRequest._retry && !skipReissue) {
       originalRequest._retry = true
       const newToken = await enqueueRefresh()
       if (newToken) {
-        const headers = AxiosHeaders.from(originalRequest.headers ?? {})
-        headers.set('Authorization', `Bearer ${newToken}`)
-        originalRequest.headers = headers
         return apiClient(originalRequest)
       }
     }

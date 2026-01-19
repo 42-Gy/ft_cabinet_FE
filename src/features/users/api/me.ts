@@ -1,18 +1,22 @@
 import { apiClient } from '@/libs/axios/client'
 import { unwrapApiResponse } from '@/libs/axios/unwrap'
-import { tokenStore } from '@/libs/auth/tokenStore'
 import type { UserProfile } from '@/types/user'
 
-export const fetchMe = async (): Promise<UserProfile> => {
-  const token = tokenStore.get()
-  if (!token) {
-    throw new Error('액세스 토큰이 없습니다. 다시 로그인해 주세요.')
+export const fetchMe = async (): Promise<UserProfile | null> => {
+  try {
+    const { data } = await apiClient.get('/v4/users/me', {
+      headers: {
+        'X-Skip-Reissue': 'true',
+      },
+    })
+    return unwrapApiResponse<UserProfile>(data)
+  } catch (error) {
+    if (error && typeof error === 'object' && 'response' in error) {
+      const response = (error as { response?: { status?: number } }).response
+      if (response?.status === 401) {
+        return null
+      }
+    }
+    throw error
   }
-
-  const { data } = await apiClient.get('/v4/users/me', {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
-  return unwrapApiResponse<UserProfile>(data)
 }
