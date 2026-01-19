@@ -29,7 +29,7 @@ import {
   useCabinetSummaryQuery,
 } from '@/features/lockers/hooks/useLockerData'
 import { UsageSummary } from '@/features/status/components/UsageSummary'
-import type { CabinetSummary } from '@/types/locker'
+import type { CabinetSummary, CabinetSummaryAll } from '@/types/locker'
 
 const guideCards = [
   {
@@ -52,7 +52,13 @@ const guideCards = [
   },
 ]
 
-export const HomeOverview = () => {
+interface HomeOverviewProps {
+  summaryAll?: CabinetSummaryAll | null
+  summaryError?: boolean
+  onRetry?: () => void
+}
+
+export const HomeOverview = ({ summaryAll, summaryError, onRetry }: HomeOverviewProps) => {
   const guideModal = useDisclosure()
   const summaryQuery = useCabinetSummaryAllQuery()
   const summary2F = useCabinetSummaryQuery({ floor: 2, enabled: true })
@@ -114,11 +120,15 @@ export const HomeOverview = () => {
     return floors
   }, [summary2F.data, summary3F.data])
 
-  if (summaryQuery.isLoading) return <LoadingState label="락커 현황을 불러오는 중입니다." />
-  if (summaryQuery.isError) return <ErrorState onRetry={summaryQuery.refetch} />
-  if (!summaryQuery.data) return <EmptyState title="등록된 락커가 없습니다" />
+  const resolvedSummary = summaryAll ?? summaryQuery.data
+  const isLoading = summaryAll === undefined ? summaryQuery.isLoading : false
+  const isError = summaryError ?? summaryQuery.isError
 
-  const { totalCounts, totalAvailable, totalFull, totalBroken } = summaryQuery.data
+  if (isLoading) return <LoadingState label="락커 현황을 불러오는 중입니다." />
+  if (isError) return <ErrorState onRetry={onRetry ?? summaryQuery.refetch} />
+  if (!resolvedSummary) return <EmptyState title="등록된 락커가 없습니다" />
+
+  const { totalCounts, totalAvailable, totalFull, totalBroken } = resolvedSummary
 
   return (
     <Stack spacing={10} w="full">

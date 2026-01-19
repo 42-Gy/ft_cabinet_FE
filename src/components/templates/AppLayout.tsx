@@ -11,6 +11,7 @@ import {
   useColorModeValue,
   useDisclosure,
 } from '@chakra-ui/react'
+import { useEffect, useState } from 'react'
 import { Link as RouterLink, NavLink, Outlet } from 'react-router-dom'
 import { HiOutlineMenu, HiOutlineX } from 'react-icons/hi'
 import { FiMoon, FiSun } from 'react-icons/fi'
@@ -35,7 +36,8 @@ export const AppLayout = () => {
   const linkColor = useColorModeValue('gray.600', 'gray.300')
   const activeLinkColor = useColorModeValue('brand.600', 'leaf.200')
   const hoverColor = useColorModeValue('leaf.500', 'leaf.200')
-  const mainBg = useColorModeValue('#fdf9f5', '#111')
+  const mainBg = useColorModeValue('white', '#111')
+  const [isScrolled, setIsScrolled] = useState(false)
 
   const handleLogin = () => {
     if (typeof window !== 'undefined') {
@@ -44,6 +46,15 @@ export const AppLayout = () => {
   }
 
   const isLoggedIn = isAuthenticated
+
+  useEffect(() => {
+    const updateScroll = () => {
+      setIsScrolled(window.scrollY > 8)
+    }
+    updateScroll()
+    window.addEventListener('scroll', updateScroll, { passive: true })
+    return () => window.removeEventListener('scroll', updateScroll)
+  }, [])
 
   const renderLinks = (direction: 'row' | 'column') => (
     <Stack
@@ -70,7 +81,15 @@ export const AppLayout = () => {
 
   return (
     <Flex direction="column" minH="100vh">
-      <Box as="header" bg={headerBg} borderBottomWidth={1} borderColor={borderColor} position="sticky" top={0} zIndex={10}>
+      <Box
+        as="header"
+        bg={headerBg}
+        borderBottomWidth={isScrolled ? 1 : 0}
+        borderColor={borderColor}
+        position="sticky"
+        top={0}
+        zIndex={10}
+      >
         <Flex align="center" justify="flex-start" maxW="1200px" mx="auto" px={{ base: 4, md: 8 }} py={4} gap={4}>
           <Link
             as={RouterLink}

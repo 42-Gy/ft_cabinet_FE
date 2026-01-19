@@ -1,45 +1,119 @@
-import { Badge, Box, Button, Text, VStack } from '@chakra-ui/react'
+import { Badge, Box, Button, Image, Stack, Text, VStack } from '@chakra-ui/react'
 import { HomeOverview } from '@/features/status/components/HomeOverview'
+import { useCabinetSummaryAllQuery } from '@/features/lockers/hooks/useLockerData'
 
-export const HomePage = () => (
-  <VStack spacing={10} w="full">
-    <Box
-      w="full"
-      borderRadius="3xl"
-      borderWidth={1}
-      borderColor="whiteAlpha.200"
-      bgImage="url('/assets/images/waterback.jpg')"
-      bgSize="cover"
-      bgPos="center 40%"
-      bgRepeat="no-repeat"
-      p={{ base: 10, md: 16 }}
-      color="white"
-      shadow="xl"
-      position="relative"
-      minH={{ base: '320px', md: '420px' }}
-    >
-      <VStack align="flex-start" spacing={4} maxW="960px">
-        <Badge colorScheme="blue" fontSize="md" px={3} py={1}>
-          SUBAK Stories
-        </Badge>
-        <Text fontSize={{ base: '3.25rem', md: '4.5rem' }} fontWeight="black" lineHeight={1.05}>
-          무거운 짐은 이제 그만 수박에게 맡기세요
-        </Text>
-        <Text fontSize="2xl">Safer Under Beside of you, Always Keeping</Text>
+export const HomePage = () => {
+  const summaryQuery = useCabinetSummaryAllQuery()
+  const isLoading = summaryQuery.isLoading
+
+  return (
+    <Box minH="100vh" pb={{ base: 10, md: 12 }}>
+      <VStack spacing={{ base: 8, md: 10 }} w="full" align="stretch">
+        <Box
+          w="100vw"
+          position="relative"
+          left="50%"
+          right="50%"
+          ml="-50vw"
+          mr="-50vw"
+          bgImage="url('/assets/images/bg_full.png')"
+          bgRepeat="no-repeat"
+          bgSize="cover"
+          bgPos="center"
+          pt={{ base: 6, md: 10 }}
+          pb={{ base: 10, md: 12 }}
+        >
+          <Box
+            w="min(1200px, calc(100% - 64px))"
+            mx="auto"
+            h={{ base: 'auto', md: '380px' }}
+            borderRadius="28px"
+            bgImage="url('/assets/images/hero_bg2.png')"
+            bgSize="cover"
+            bgPos="center"
+            bgRepeat="no-repeat"
+            p={{ base: '28px 24px', md: '56px 64px' }}
+            shadow="0 20px 60px rgba(0,0,0,0.12)"
+            overflow="hidden"
+          >
+            <Stack spacing={4} maxW={{ base: '100%', md: '720px' }}>
+              <Badge
+                w="fit-content"
+                px={3}
+                py={1}
+                fontSize="sm"
+                borderRadius="full"
+                bg="whiteAlpha.800"
+                color="pink.600"
+              >
+                SUBAK STORIES
+              </Badge>
+              <Text
+                fontSize={{ base: '36px', md: '56px' }}
+                fontWeight="black"
+                lineHeight={1.15}
+                letterSpacing="-0.02em"
+                maxW="720px"
+                wordBreak="keep-all"
+                whiteSpace="normal"
+              >
+                무거운 짐, 캠퍼스에 두고 가세요.
+              </Text>
+              <Text
+                mt="16px"
+                fontSize={{ base: '16px', md: '18px' }}
+                lineHeight={1.6}
+                maxW="640px"
+                color="gray.600"
+              >
+                42 경산 학습자를 위한 공유 사물함 대여 서비스
+              </Text>
+              <Button
+                mt="28px"
+                height="52px"
+                px="18px"
+                borderRadius="16px"
+                alignSelf="flex-start"
+                bg="brand.500"
+                color="white"
+                _hover={{ bg: 'brand.400' }}
+                display="inline-flex"
+                alignItems="center"
+                gap="10px"
+                as="a"
+                href="/lockers"
+                w={{ base: '100%', md: 'auto' }}
+                justifyContent={{ base: 'center', md: 'flex-start' }}
+              >
+                지금 비어있는 사물함 확인
+                <Image src="/assets/images/icon_box.png" alt="상자 아이콘" boxSize="22px" />
+              </Button>
+            </Stack>
+          </Box>
+
+          {isLoading && (
+            <Stack spacing={3} align="center" mt={8} bg="transparent">
+              <Image
+                src="/assets/images/icon_watermelon_loading.png"
+                alt="수박 로딩"
+                boxSize="48px"
+                filter="drop-shadow(0 6px 12px rgba(0,0,0,0.2))"
+              />
+              <Text fontSize="sm" color="gray.600">
+                수박이 사물함을 정리 중이에요
+              </Text>
+            </Stack>
+          )}
+        </Box>
+
+        {!isLoading && (
+          <HomeOverview
+            summaryAll={summaryQuery.data}
+            summaryError={summaryQuery.isError}
+            onRetry={summaryQuery.refetch}
+          />
+        )}
       </VStack>
-      <Button
-        colorScheme="brand"
-        size="lg"
-        as="a"
-        href="/lockers"
-        position="absolute"
-        bottom={{ base: 6, md: 8 }}
-        right={{ base: 6, md: 10 }}
-      >
-        바로 대여하러 가기
-      </Button>
     </Box>
-
-    <HomeOverview />
-  </VStack>
-)
+  )
+}
