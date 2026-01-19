@@ -6,7 +6,7 @@ export const apiClient = axios.create({
   headers: {
   },
   withCredentials: true,
-  timeout: 8000,
+  timeout: 20000,
 })
 
 export const publicClient = axios.create({

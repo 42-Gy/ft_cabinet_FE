@@ -60,6 +60,7 @@ export const MyLockersPage = () => {
   const [cameraStarting, setCameraStarting] = useState(false)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const cameraTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const cardBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200')
@@ -85,6 +86,10 @@ export const MyLockersPage = () => {
       if (returnPreviewUrl) URL.revokeObjectURL(returnPreviewUrl)
       streamRef.current?.getTracks().forEach((track) => track.stop())
       streamRef.current = null
+      if (cameraTimeoutRef.current) {
+        clearTimeout(cameraTimeoutRef.current)
+        cameraTimeoutRef.current = null
+      }
     }
   }, [returnPreviewUrl])
 
@@ -167,6 +172,10 @@ export const MyLockersPage = () => {
       setCameraError(null)
       setCameraReady(false)
       setCameraStarting(true)
+      if (cameraTimeoutRef.current) {
+        clearTimeout(cameraTimeoutRef.current)
+        cameraTimeoutRef.current = null
+      }
       if (!navigator.mediaDevices?.getUserMedia) {
         setCameraError('이 브라우저에서는 카메라를 사용할 수 없습니다.')
         setCameraStarting(false)
@@ -184,6 +193,12 @@ export const MyLockersPage = () => {
         })
       }
       setCameraActive(true)
+      cameraTimeoutRef.current = setTimeout(() => {
+        if (!cameraReady) {
+          setCameraError('카메라 준비가 지연되고 있습니다. 다시 시도해 주세요.')
+          setCameraStarting(false)
+        }
+      }, 3000)
     } catch (error) {
       setCameraError('카메라 접근이 허용되지 않았습니다.')
       setCameraActive(false)
@@ -200,6 +215,10 @@ export const MyLockersPage = () => {
     }
     setCameraActive(false)
     setCameraReady(false)
+    if (cameraTimeoutRef.current) {
+      clearTimeout(cameraTimeoutRef.current)
+      cameraTimeoutRef.current = null
+    }
   }
 
   const handleCapturePhoto = () => {
@@ -324,7 +343,22 @@ export const MyLockersPage = () => {
                             ref={videoRef}
                             style={{ width: '100%' }}
                             playsInline
-                            onLoadedMetadata={() => setCameraReady(true)}
+                            muted
+                            autoPlay
+                            onLoadedMetadata={() => {
+                              setCameraReady(true)
+                              if (cameraTimeoutRef.current) {
+                                clearTimeout(cameraTimeoutRef.current)
+                                cameraTimeoutRef.current = null
+                              }
+                            }}
+                            onCanPlay={() => {
+                              setCameraReady(true)
+                              if (cameraTimeoutRef.current) {
+                                clearTimeout(cameraTimeoutRef.current)
+                                cameraTimeoutRef.current = null
+                              }
+                            }}
                           />
                         </Box>
                         <Button
