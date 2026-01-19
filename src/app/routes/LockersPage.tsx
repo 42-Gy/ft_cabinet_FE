@@ -167,7 +167,7 @@ export const LockersPage = () => {
   })
 
   const cabinetsForSection = useMemo(() => {
-    if (!currentSection || !cabinetsQuery.data) return []
+    if (!currentSection || !Array.isArray(cabinetsQuery.data)) return []
     return cabinetsQuery.data
       .filter((cabinet) => extractSectionId(cabinet.section) === currentSection.id)
       .sort((a, b) => a.visibleNum - b.visibleNum)
