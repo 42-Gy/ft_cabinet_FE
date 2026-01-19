@@ -8,7 +8,7 @@ export const HomePage = () => (
       borderRadius="3xl"
       borderWidth={1}
       borderColor="whiteAlpha.200"
-      bgImage="url('/waterback.jpg')"
+      bgImage="url('/assets/images/waterback.jpg')"
       bgSize="cover"
       bgPos="center 40%"
       bgRepeat="no-repeat"

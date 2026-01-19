@@ -81,7 +81,12 @@ export const AppLayout = () => {
             textDecoration="none"
             _hover={{ textDecoration: 'none' }}
           >
-            <Image src="/subak_log.png" alt="SUBAK 로고" boxSize={{ base: 10, md: 12 }} borderRadius="full" />
+            <Image
+              src="/assets/images/subak_log.png"
+              alt="SUBAK 로고"
+              boxSize={{ base: 10, md: 12 }}
+              borderRadius="full"
+            />
             <Stack spacing={0} align="flex-start">
               <Text fontWeight="black" fontSize="xl" color="brand.600">
                 {env.serviceName}

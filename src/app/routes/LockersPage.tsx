@@ -526,7 +526,9 @@ export const LockersPage = () => {
                       const palette = lockerStatusPalette[effectiveStatus] ?? defaultCardStyle
                       const statusStyle = isMine ? myLockerStyle : isSelected ? selectedPalette : palette
                       const isAvailable = effectiveStatus === 'AVAILABLE'
-                      const bgImage = isAvailable ? "url('/subak_ncabi.png')" : "url('/subak_cabi.png')"
+                      const bgImage = isAvailable
+                        ? "url('/assets/images/subak_ncabi.png')"
+                        : "url('/assets/images/subak_cabi.png')"
                       return (
                         <Box
                           key={cabinet.cabinetId}
