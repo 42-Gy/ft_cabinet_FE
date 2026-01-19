@@ -49,12 +49,15 @@ export const MyLockersPage = () => {
   const { isOpen, onOpen, onClose: closeModal } = useDisclosure()
   const [swapTarget, setSwapTarget] = useState('')
   const [returnFile, setReturnFile] = useState<File | null>(null)
+  const [returnPreviewUrl, setReturnPreviewUrl] = useState<string | null>(null)
   const [returnPassword, setReturnPassword] = useState('')
   const [forceReturn, setForceReturn] = useState(false)
   const [forceReason, setForceReason] = useState('')
   const [autoExtensionEnabled, setAutoExtensionEnabled] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [cameraActive, setCameraActive] = useState(false)
+  const [cameraReady, setCameraReady] = useState(false)
+  const [cameraStarting, setCameraStarting] = useState(false)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
 
@@ -153,6 +156,7 @@ export const MyLockersPage = () => {
 
   useEffect(() => {
     return () => {
+      if (returnPreviewUrl) URL.revokeObjectURL(returnPreviewUrl)
       streamRef.current?.getTracks().forEach((track) => track.stop())
       streamRef.current = null
     }
@@ -161,8 +165,11 @@ export const MyLockersPage = () => {
   const handleStartCamera = async () => {
     try {
       setCameraError(null)
+      setCameraReady(false)
+      setCameraStarting(true)
       if (!navigator.mediaDevices?.getUserMedia) {
         setCameraError('이 브라우저에서는 카메라를 사용할 수 없습니다.')
+        setCameraStarting(false)
         return
       }
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -175,9 +182,11 @@ export const MyLockersPage = () => {
         await videoRef.current.play()
       }
       setCameraActive(true)
+      setCameraStarting(false)
     } catch (error) {
       setCameraError('카메라 접근이 허용되지 않았습니다.')
       setCameraActive(false)
+      setCameraStarting(false)
     }
   }
 
@@ -188,16 +197,14 @@ export const MyLockersPage = () => {
       videoRef.current.srcObject = null
     }
     setCameraActive(false)
+    setCameraReady(false)
   }
 
   const handleCapturePhoto = () => {
     if (!videoRef.current) return
     const video = videoRef.current
     const canvas = document.createElement('canvas')
-    if (!video.videoWidth || !video.videoHeight) {
-      setCameraError('카메라가 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.')
-      return
-    }
+    if (!video.videoWidth || !video.videoHeight) return
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
     const ctx = canvas.getContext('2d')
@@ -207,7 +214,19 @@ export const MyLockersPage = () => {
       if (!blob) return
       const file = new File([blob], `return-${Date.now()}.jpg`, { type: 'image/jpeg' })
       setReturnFile(file)
+      setReturnPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev)
+        return URL.createObjectURL(file)
+      })
     }, 'image/jpeg', 0.9)
+  }
+
+  const handleFileSelect = (file: File | null) => {
+    setReturnFile(file)
+    setReturnPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return file ? URL.createObjectURL(file) : null
+    })
   }
 
   return (
@@ -278,7 +297,11 @@ export const MyLockersPage = () => {
                 <FormControl>
                   <FormLabel>사물함 내부 사진</FormLabel>
                   <Stack spacing={2} mb={2} align="flex-start">
-                    <Button size="sm" onClick={cameraActive ? handleStopCamera : handleStartCamera}>
+                    <Button
+                      size="sm"
+                      onClick={cameraActive ? handleStopCamera : handleStartCamera}
+                      isLoading={cameraStarting}
+                    >
                       {cameraActive ? '카메라 끄기' : '카메라 켜기'}
                     </Button>
                     {cameraError && (
@@ -295,18 +318,44 @@ export const MyLockersPage = () => {
                           overflow="hidden"
                           bg="black"
                         >
-                          <video ref={videoRef} style={{ width: '100%' }} playsInline />
+                          <video
+                            ref={videoRef}
+                            style={{ width: '100%' }}
+                            playsInline
+                            onLoadedMetadata={() => setCameraReady(true)}
+                          />
                         </Box>
-                        <Button size="sm" colorScheme="brand" onClick={handleCapturePhoto}>
-                          사진 찍기
+                        <Button
+                          size="sm"
+                          colorScheme="brand"
+                          onClick={handleCapturePhoto}
+                          isDisabled={!cameraReady}
+                        >
+                          {cameraReady ? '사진 찍기' : '카메라 준비 중...'}
                         </Button>
                       </Stack>
                     )}
                   </Stack>
+                  {returnPreviewUrl && (
+                    <Stack spacing={2} mb={2}>
+                      <Box
+                        borderWidth={1}
+                        borderColor={borderColor}
+                        borderRadius="md"
+                        overflow="hidden"
+                        bg="blackAlpha.200"
+                      >
+                        <img src={returnPreviewUrl} alt="사물함 촬영 미리보기" style={{ width: '100%' }} />
+                      </Box>
+                      <Text fontSize="sm" color={textMuted}>
+                        선택됨: {returnFile?.name}
+                      </Text>
+                    </Stack>
+                  )}
                   <Input
                     type="file"
                     accept="image/*"
-                    onChange={(event) => setReturnFile(event.target.files?.[0] ?? null)}
+                    onChange={(event) => handleFileSelect(event.target.files?.[0] ?? null)}
                   />
                 </FormControl>
                 <FormControl>
