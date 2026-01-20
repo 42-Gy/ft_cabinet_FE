@@ -94,6 +94,26 @@ export const MyLockersPage = () => {
     }
   }, [returnPreviewUrl])
 
+  useEffect(() => {
+    const video = videoRef.current
+    const stream = streamRef.current
+    if (!video || !stream || !cameraActive) return
+
+    video.srcObject = stream
+    video.muted = true
+    video.playsInline = true
+    video.setAttribute('playsinline', 'true')
+    video.setAttribute('webkit-playsinline', 'true')
+
+    requestAnimationFrame(() => {
+      video.play().catch((error) => {
+        // eslint-disable-next-line no-console
+        console.error('[Camera] video play failed', error)
+        setCameraError('카메라 재생을 시작할 수 없습니다.')
+      })
+    })
+  }, [cameraActive])
+
   if (isLoading) return <LoadingState label="내 정보를 불러오는 중입니다." />
   if (isError) return <ErrorState onRetry={refetch} />
   if (!me) {
@@ -167,26 +187,6 @@ export const MyLockersPage = () => {
       onError: () => setAutoExtensionEnabled((prev) => !prev),
     })
   }
-
-  useEffect(() => {
-    const video = videoRef.current
-    const stream = streamRef.current
-    if (!video || !stream || !cameraActive) return
-
-    video.srcObject = stream
-    video.muted = true
-    video.playsInline = true
-    video.setAttribute('playsinline', 'true')
-    video.setAttribute('webkit-playsinline', 'true')
-
-    requestAnimationFrame(() => {
-      video.play().catch((error) => {
-        // eslint-disable-next-line no-console
-        console.error('[Camera] video play failed', error)
-        setCameraError('카메라 재생을 시작할 수 없습니다.')
-      })
-    })
-  }, [cameraActive])
 
   const handleStartCamera = async () => {
     try {

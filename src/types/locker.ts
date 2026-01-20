@@ -1,4 +1,4 @@
-export type CabinetStatus = 'AVAILABLE' | 'FULL' | 'BROKEN' | 'OVERDUE' | 'DISABLED'
+export type CabinetStatus = 'AVAILABLE' | 'FULL' | 'BROKEN' | 'OVERDUE' | 'DISABLED' | 'PENDING'
 
 export interface Cabinet {
   cabinetId: number

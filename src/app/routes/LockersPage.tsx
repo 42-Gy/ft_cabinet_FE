@@ -54,6 +54,7 @@ const statusBadgeMeta: Record<
   BROKEN: { color: 'red', label: '점검 중', description: '점검 후 다시 열립니다.' },
   OVERDUE: { color: 'purple', label: '연체', description: '연체 상태입니다.' },
   DISABLED: { color: 'gray', label: '비활성', description: '현재 대여가 중지되었습니다.' },
+  PENDING: { color: 'yellow', label: '승인 대기', description: '반납 승인 대기 중입니다.' },
 }
 
 export const LockersPage = () => {
@@ -131,6 +132,7 @@ export const LockersPage = () => {
     OVERDUE: overduePalette,
     BROKEN: brokenPalette,
     DISABLED: brokenPalette,
+    PENDING: brokenPalette,
   }
 
   const legendAvailable = useColorModeValue('green.400', 'green.200')
