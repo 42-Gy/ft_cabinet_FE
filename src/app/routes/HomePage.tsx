@@ -1,6 +1,6 @@
 import { Badge, Box, Button, Image, Stack, Text, VStack } from '@chakra-ui/react'
-import { HomeOverview } from '@/features/status/components/HomeOverview'
 import { useCabinetSummaryAllQuery } from '@/features/lockers/hooks/useLockerData'
+import { HomeOverview } from '@/features/status/components/HomeOverview'
 
 export const HomePage = () => {
   const summaryQuery = useCabinetSummaryAllQuery()
@@ -42,7 +42,7 @@ export const HomePage = () => {
                 px={3}
                 py={1}
                 fontSize="sm"
-                borderRadius="full"
+                borderRadius="12px"
                 bg="whiteAlpha.800"
                 color="pink.600"
               >
@@ -56,6 +56,9 @@ export const HomePage = () => {
                 maxW="720px"
                 wordBreak="keep-all"
                 whiteSpace="normal"
+                color="whiteAlpha.900"
+                textShadow="0 8px 18px rgba(255, 105, 135, 0.35)"
+                sx={{ WebkitTextStroke: '0.01px rgba(255, 120, 160, 0.55)' }}
               >
                 무거운 짐, 캠퍼스에 두고 가세요.
               </Text>

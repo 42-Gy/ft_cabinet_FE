@@ -7,19 +7,29 @@ export interface AdminDashboardStats {
 }
 
 export interface AdminUserDetail {
-  userId: number
+  id: number
   name: string
   email: string
   coin: number
   penaltyDays: number
   monthlyLogtime: number
-  lentCabinetId?: number | null
-  visibleNum?: number | null
-  section?: string | null
+  blackholedAt?: string | null
+  role?: string | null
+  currentCabinetNum?: number | null
 }
 
 export interface CoinProvideRequest {
   amount: number
+  reason: string
+}
+
+export interface PenaltyAssignRequest {
+  penaltyDays: number
+  reason: string
+}
+
+export interface ItemGrantRequest {
+  itemName: string
   reason: string
 }
 
@@ -34,4 +44,71 @@ export interface CabinetStatusRequest {
   status: CabinetStatusValue
   lentType: CabinetLentType
   statusNote?: string
+}
+
+export interface AdminWeeklyStats {
+  lentsStarted: number
+  lentsEnded: number
+}
+
+export interface AdminStoreStats {
+  totalUserCoins: number
+  totalUsedCoins: number
+  itemSales: {
+    extensionTicket: number
+    swapTicket: number
+    alarm: number
+  }
+}
+
+export interface AdminAttendanceStat {
+  date: string
+  count: number
+}
+
+export interface AdminCabinetDetail {
+  cabinetId: number
+  visibleNum: number
+  status: CabinetStatusValue
+  lentType: CabinetLentType
+  maxUser: number
+  section: string
+  location: string
+  title?: string | null
+  currentUserName?: string | null
+  currentUserId?: number | null
+}
+
+export interface AdminCabinetPendingItem {
+  visibleNum: number
+  statusNote?: string | null
+  lentType?: CabinetLentType | null
+}
+
+export interface AdminCabinetHistoryItem {
+  lentHistoryId: number
+  userName: string
+  startedAt: string
+  endedAt?: string | null
+}
+
+export interface AdminCabinetHistoryPage {
+  content: AdminCabinetHistoryItem[]
+  totalPages: number
+  totalElements: number
+}
+
+export interface AdminOverdueUser {
+  userId: number
+  name: string
+  visibleNum: number
+  overdueDays: number
+}
+
+export interface ItemPriceUpdateRequest {
+  price: number
+}
+
+export interface EmergencyNoticeRequest {
+  message: string
 }
