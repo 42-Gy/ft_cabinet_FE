@@ -82,6 +82,7 @@ export interface AdminCabinetDetail {
 export interface AdminCabinetPendingItem {
   visibleNum: number
   statusNote?: string | null
+  photoUrl?: string | null
   lentType?: CabinetLentType | null
 }
 

@@ -7,6 +7,7 @@ import {
   FormControl,
   FormLabel,
   HStack,
+  Image,
   Input,
   NumberInput,
   NumberInputField,
@@ -315,6 +316,11 @@ export const AdminDashboard = () => {
                           <Text fontSize="sm" color={mutedText}>
                             {item.statusNote ?? '사유 없음'}
                           </Text>
+                          {item.photoUrl && (
+                            <Box mt={3} borderWidth={1} borderColor={highlightBorder} borderRadius="md" overflow="hidden">
+                              <Image src={item.photoUrl} alt={`사물함 ${item.visibleNum} 사진`} w="full" />
+                            </Box>
+                          )}
                           <Button
                             mt={2}
                             size="sm"
