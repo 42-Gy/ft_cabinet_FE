@@ -60,6 +60,7 @@ export const MyLockersPage = () => {
   const [cameraStarting, setCameraStarting] = useState(false)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const cameraReadyRef = useRef(false)
   const cameraTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const cardBg = useColorModeValue('white', 'gray.800')
@@ -172,6 +173,7 @@ export const MyLockersPage = () => {
       setCameraError(null)
       setCameraReady(false)
       setCameraStarting(true)
+      cameraReadyRef.current = false
       // Debug logging to trace camera flow in production
       // eslint-disable-next-line no-console
       console.info('[Camera] start requested')
@@ -209,12 +211,18 @@ export const MyLockersPage = () => {
       }
       setCameraActive(true)
       cameraTimeoutRef.current = setTimeout(() => {
-        if (!cameraReady) {
+        const video = videoRef.current
+        const isReady =
+          Boolean(video && video.readyState >= 2 && video.videoWidth && video.videoHeight) ||
+          cameraReadyRef.current
+        if (isReady) {
+          setCameraReady(true)
+          return
+        }
           // eslint-disable-next-line no-console
           console.warn('[Camera] ready timeout')
           setCameraError('카메라 준비가 지연되고 있습니다. 다시 시도해 주세요.')
           setCameraStarting(false)
-        }
       }, 3000)
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -234,6 +242,7 @@ export const MyLockersPage = () => {
     }
     setCameraActive(false)
     setCameraReady(false)
+    cameraReadyRef.current = false
     if (cameraTimeoutRef.current) {
       clearTimeout(cameraTimeoutRef.current)
       cameraTimeoutRef.current = null
@@ -357,10 +366,12 @@ export const MyLockersPage = () => {
                           borderRadius="md"
                           overflow="hidden"
                           bg="black"
+                          minH="220px"
+                          sx={{ aspectRatio: '16 / 9' }}
                         >
                           <video
                             ref={videoRef}
-                            style={{ width: '100%' }}
+                            style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }}
                             playsInline
                             muted
                             autoPlay
@@ -370,6 +381,7 @@ export const MyLockersPage = () => {
                                 width: videoRef.current?.videoWidth,
                                 height: videoRef.current?.videoHeight,
                               })
+                              cameraReadyRef.current = true
                               setCameraReady(true)
                               if (cameraTimeoutRef.current) {
                                 clearTimeout(cameraTimeoutRef.current)
@@ -379,6 +391,7 @@ export const MyLockersPage = () => {
                             onCanPlay={() => {
                               // eslint-disable-next-line no-console
                               console.info('[Camera] can play')
+                              cameraReadyRef.current = true
                               setCameraReady(true)
                               if (cameraTimeoutRef.current) {
                                 clearTimeout(cameraTimeoutRef.current)

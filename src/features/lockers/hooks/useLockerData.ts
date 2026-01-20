@@ -117,10 +117,16 @@ const useInvalidateLockerQueries = () => {
 export const useRentCabinetMutation = () => {
   const toast = useToast()
   const invalidate = useInvalidateLockerQueries()
+  const isRentSuccessMessage = (message?: string | null) =>
+    Boolean(message && (message.includes('성공') || message.includes('완료') || message.includes('✅')))
 
   return useMutation<LockerActionResult, unknown, number>({
     mutationFn: async (cabinetId: number) => {
-      return rentCabinet(cabinetId)
+      const result = await rentCabinet(cabinetId)
+      if (!isRentSuccessMessage(result.message)) {
+        throw new Error(result.message ?? '사물함 대여에 실패했습니다.')
+      }
+      return result
     },
     onSuccess: (result) => {
       toast({ description: result.message ?? '사물함 대여가 완료되었습니다.', status: 'success' })
