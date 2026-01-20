@@ -11,6 +11,7 @@ export interface UserProfile {
   userId: number
   name: string
   email: string
+  role?: string | null
   coin: number
   penaltyDays: number
   monthlyLogtime: number

@@ -7,7 +7,7 @@ import { PolicyPage } from '@/app/routes/PolicyPage'
 import { AttendancePage } from '@/app/routes/AttendancePage'
 import { StorePage } from '@/app/routes/StorePage'
 import { NotFoundPage } from '@/app/routes/NotFoundPage'
-import { AdminPage } from '@/app/routes/AdminPage'
+import { AdminGate } from '@/app/routes/AdminGate'
 import { AuthCallbackPage } from '@/app/routes/AuthCallbackPage'
 
 export const appRoutes: RouteObject[] = [
@@ -16,7 +16,7 @@ export const appRoutes: RouteObject[] = [
     element: <AppLayout />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'admin', element: <AdminPage /> },
+      { path: 'admin', element: <AdminGate /> },
       { path: 'lockers', element: <LockersPage /> },
       { path: 'my/lockers', element: <MyLockersPage /> },
       { path: 'store', element: <StorePage /> },

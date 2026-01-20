@@ -19,17 +19,17 @@ import { env } from '@/libs/env'
 import { useAuthSession } from '@/features/auth/hooks/useAuthSession'
 
 const routes = [
+  { to: '/admin', label: '관리자', requiresAdmin: true },
   { to: '/lockers', label: '사물함' },
   { to: '/my/lockers', label: '내 사물함' },
   { to: '/attendance', label: '출석' },
   { to: '/store', label: '상점' },
-  { to: '/admin', label: '관리자' },
   { to: '/policy', label: '정책' },
 ]
 
 export const AppLayout = () => {
   const { isOpen, onToggle, onClose } = useDisclosure()
-  const { isAuthenticated, logout } = useAuthSession()
+  const { isAuthenticated, logout, me } = useAuthSession()
   const { colorMode, toggleColorMode } = useColorMode()
   const headerBg = useColorModeValue('white', 'gray.900')
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200')
@@ -56,26 +56,29 @@ export const AppLayout = () => {
     return () => window.removeEventListener('scroll', updateScroll)
   }, [])
 
+  const isAdmin = me?.role === 'ADMIN' || me?.role === 'ROLE_ADMIN' || me?.role === 'MASTER'
   const renderLinks = (direction: 'row' | 'column') => (
     <Stack
       spacing={direction === 'row' ? 6 : 4}
       direction={direction}
       align={direction === 'row' ? 'center' : 'flex-start'}
     >
-      {routes.map((route) => (
-        <Link
-          key={route.to}
-          as={NavLink}
-          to={route.to}
-          onClick={onClose}
-          fontWeight="medium"
-          color={linkColor}
-          _hover={{ color: hoverColor }}
-          _activeLink={{ color: activeLinkColor }}
-        >
-          {route.label}
-        </Link>
-      ))}
+      {routes
+        .filter((route) => !route.requiresAdmin || isAdmin)
+        .map((route) => (
+          <Link
+            key={route.to}
+            as={NavLink}
+            to={route.to}
+            onClick={onClose}
+            fontWeight="medium"
+            color={linkColor}
+            _hover={{ color: hoverColor }}
+            _activeLink={{ color: activeLinkColor }}
+          >
+            {route.label}
+          </Link>
+        ))}
     </Stack>
   )
 
