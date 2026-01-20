@@ -34,21 +34,21 @@ import type { CabinetSummary, CabinetSummaryAll } from '@/types/locker'
 const guideCards = [
   {
     title: '사물함 대여법',
-    summary: '지도에서 섹션을 선택하고 Drawer로 상세 상태를 확인하세요.',
+    summary: '캠퍼스에서 사용할 사물함을 바로 찾아 대여하세요.',
     detail:
-      '42 OAuth 로그인 후 사물함 페이지에서 원하는 섹션을 고르면 AVAILABLE 카드가 Drawer와 함께 나타납니다. “이 사물함 대여하기” 버튼을 누르면 TanStack Query가 자동 갱신되어 /my/lockers에서 대여 내용을 즉시 확인하고 관리할 수 있습니다.',
+      '42 계정으로 로그인한 뒤 사물함 페이지에서 사용하고 싶은 구역을 선택하면 지금 비어 있는 사물함을 바로 확인할 수 있어요. 원하는 사물함을 고르고 대여하기를 누르면 내 사물함으로 즉시 등록되어 바로 사용 가능합니다.',
   },
   {
     title: '수박 얻는 법',
-    summary: '출석 · 씨앗 심기 · 공부 50시간 루틴으로 수박씨를 모읍니다.',
+    summary: '출석하고 공부하면서 수박씨를 모아보세요.',
     detail:
-      '출석 화면에서 하루 한 번 씨앗을 심고, 클러스터 Logtime 50시간을 채우면 다음 달 1일에 1,000 수박씨가 들어옵니다. 모든 코인은 스토어/아이템 사용과 바로 연계됩니다.',
+      '하루에 한 번 출석체크를 하고, 클러스터에서 50시간 이상 활동하면 다음 달 사용할 수 있는 수박씨가 지급돼요. 모은 수박씨는 상점에서 아이템을 구매하는 데 사용할 수 있어요.',
   },
   {
     title: '수박 상점 안내서',
-    summary: '대여권/연장권/이사권/감면권을 한 곳에서 구매·사용하세요.',
+    summary: '사물함에 필요한 아이템을 한 곳에서 관리하세요.',
     detail:
-      '스토어 화면에서 원하는 티켓을 고르면 해당 카드만 로딩되며, 구매 성공 시 Query invalidate로 코인 및 아이템 목록이 즉시 갱신됩니다. 보유한 티켓은 /my/lockers에서 “사용” 버튼으로 바로 적용할 수 있습니다.',
+      '상점에서 대여권, 연장권, 이사권 같은 필요한 아이템을 바로 구매할 수 있어요. 구매한 아이템은 내 사물함에서 바로 적용할 수 있어 사물함 이용을 더 편리하게 만들어줘요.',
   },
 ]
 
@@ -134,7 +134,7 @@ export const HomeOverview = ({ summaryAll, summaryError, onRetry }: HomeOverview
     <Stack spacing={10} w="full">
       <Box borderRadius="2xl" borderWidth={1} borderColor="whiteAlpha.200" p={6}>
         <Text fontWeight="bold" mb={4}>
-          SUBAK Stories
+          SUBAK 안내서
         </Text>
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
           {guideCards.map((guide) => (
