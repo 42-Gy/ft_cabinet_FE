@@ -13,6 +13,7 @@ const colorByStatus: Record<Cabinet['status'], { bg: string; color: string }> = 
   BROKEN: { bg: 'red.200', color: 'red.900' },
   OVERDUE: { bg: 'purple.200', color: 'purple.900' },
   DISABLED: { bg: 'gray.300', color: 'gray.600' },
+  PENDING: { bg: 'yellow.200', color: 'yellow.900' },
 }
 
 export const LockerSectionMap = ({ lockers, selectedLockerNumber, onSelect }: LockerSectionMapProps) => {
@@ -56,6 +57,7 @@ export const LockerSectionMap = ({ lockers, selectedLockerNumber, onSelect }: Lo
         <Legend color="red.300" label="점검" />
         <Legend color="purple.300" label="연체" />
         <Legend color="gray.500" label="비활성" />
+        <Legend color="yellow.300" label="승인 대기" />
       </HStack>
     </Stack>
   )

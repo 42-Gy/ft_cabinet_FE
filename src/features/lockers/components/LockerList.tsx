@@ -16,6 +16,7 @@ const colorByStatus: Record<Cabinet['status'], string> = {
   BROKEN: 'red',
   OVERDUE: 'purple',
   DISABLED: 'gray',
+  PENDING: 'yellow',
 }
 
 export const LockerList = ({
