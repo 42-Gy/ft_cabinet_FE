@@ -118,8 +118,15 @@ const useInvalidateLockerQueries = () => {
 export const useRentCabinetMutation = () => {
   const toast = useToast()
   const invalidate = useInvalidateLockerQueries()
-  const isRentSuccessMessage = (message?: string | null) =>
-    Boolean(message && (message.includes('성공') || message.includes('완료') || message.includes('✅')))
+  const isRentSuccessMessage = (message?: string | null) => {
+    if (!message) return true
+    return (
+      message.includes('성공') ||
+      message.includes('완료') ||
+      message.includes('✅') ||
+      /success/i.test(message)
+    )
+  }
 
   return useMutation<LockerActionResult, unknown, number>({
     mutationFn: async (cabinetId: number) => {
