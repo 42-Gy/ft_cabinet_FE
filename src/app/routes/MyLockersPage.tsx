@@ -119,8 +119,8 @@ export const MyLockersPage = () => {
   if (!me) {
     return (
       <EmptyState
-        title="로그인이 필요합니다"
-        description="헤더의 로그인 버튼을 눌러 42 OAuth로 이동해 주세요."
+        title="로그인이 필요해요"
+        description="우측 상단의 로그인 버튼을 눌러 로그인한 뒤 이용해 주세요."
       />
     )
   }

@@ -14,6 +14,7 @@ import { LoadingState } from '@/components/molecules/LoadingState'
 import { ErrorState } from '@/components/molecules/ErrorState'
 import { EmptyState } from '@/components/molecules/EmptyState'
 import { useAttendanceMutation, useAttendanceQuery } from '@/features/attendance/hooks/useAttendance'
+import { useMeQuery } from '@/features/users/hooks/useMeQuery'
 
 const formatDateKey = (date: Date) => {
   const y = date.getFullYear()
@@ -25,6 +26,8 @@ const formatDateKey = (date: Date) => {
 const weekdayLabels = ['일', '월', '화', '수', '목', '금', '토']
 
 export const AttendancePage = () => {
+  const { data: me, isLoading: meLoading } = useMeQuery()
+  const isLoggedIn = Boolean(me)
   const { data, isLoading, isError, refetch } = useAttendanceQuery()
   const attendanceMutation = useAttendanceMutation()
   const [current] = useState(() => new Date())
@@ -55,6 +58,15 @@ export const AttendancePage = () => {
   const defaultDayBg = useColorModeValue('gray.50', 'gray.700')
   const weekdayColor = useColorModeValue('gray.500', 'gray.400')
 
+  if (meLoading) return <LoadingState label="로그인 상태를 확인하는 중입니다." />
+  if (!isLoggedIn) {
+    return (
+      <EmptyState
+        title="로그인이 필요해요"
+        description="우측 상단의 로그인 버튼을 눌러 로그인한 뒤 이용해 주세요."
+      />
+    )
+  }
   if (isLoading) return <LoadingState label="출석 기록을 불러오는 중입니다." />
   if (isError) return <ErrorState onRetry={refetch} />
 
