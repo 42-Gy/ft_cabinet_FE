@@ -66,6 +66,12 @@ export const HomeOverview = ({ summaryAll, summaryError, onRetry }: HomeOverview
   const highlightBg = useColorModeValue('white', 'gray.800')
   const highlightBorder = useColorModeValue('gray.100', 'whiteAlpha.200')
   const sectionText = useColorModeValue('gray.600', 'gray.300')
+  const guideIconColor = useColorModeValue('leaf.500', 'leaf.300')
+  const guideGradients = {
+    rent: useColorModeValue('linear(to-b, #e0f7ff, #f5fbff)', 'linear(to-b, gray.800, gray.700)'),
+    seed: useColorModeValue('linear(to-b, #e7f8ed, #f6fff8)', 'linear(to-b, gray.800, gray.700)'),
+    store: useColorModeValue('linear(to-b, #fef2f2, #fff5ee)', 'linear(to-b, gray.800, gray.700)'),
+  }
   const [activeGuide, setActiveGuide] = useState<(typeof guideCards)[number] | null>(null)
   const statusColors = {
     available: useColorModeValue('leaf.400', 'leaf.300'),
@@ -147,14 +153,13 @@ export const HomeOverview = ({ summaryAll, summaryError, onRetry }: HomeOverview
               cursor="pointer"
               minH="260px"
               textAlign="center"
-              bgGradient={useColorModeValue(
+              bgGradient={
                 guide.title === '사물함 대여법'
-                  ? 'linear(to-b, #e0f7ff, #f5fbff)'
+                  ? guideGradients.rent
                   : guide.title === '수박 얻는 법'
-                    ? 'linear(to-b, #e7f8ed, #f6fff8)'
-                    : 'linear(to-b, #fef2f2, #fff5ee)',
-                'linear(to-b, gray.800, gray.700)',
-              )}
+                    ? guideGradients.seed
+                    : guideGradients.store
+              }
               _hover={{ shadow: 'lg', transform: 'translateY(-4px)' }}
               transition="all 0.2s"
               onClick={() => {
@@ -172,7 +177,7 @@ export const HomeOverview = ({ summaryAll, summaryError, onRetry }: HomeOverview
                 }
                 boxSize={12}
                 mb={3}
-                color={useColorModeValue('leaf.500', 'leaf.300')}
+                color={guideIconColor}
               />
               <Text fontWeight="semibold" fontSize="xl" mb={4}>
                 {guide.title}

@@ -243,6 +243,10 @@ export const LockersPage = () => {
   const effectiveSelectedStatus = selectedCabinet ? getEffectiveStatus(selectedCabinet) : null
 
   const canRentSelected = Boolean(selectedCabinet && isLoggedIn && effectiveSelectedStatus === 'AVAILABLE')
+  const resolvedStatusMeta =
+    statusBadgeMeta[
+      (effectiveSelectedStatus ?? selectedCabinet?.status) as CabinetStatus
+    ] ?? statusBadgeMeta.BROKEN
 
   const handleSectionSelect = (section: LockerSectionMeta) => {
     setActiveFloor(section.floor)
@@ -577,7 +581,7 @@ export const LockersPage = () => {
                     </Text>
                     <Text fontSize="sm" color={mutedText}>
                       상태:{' '}
-                      {statusBadgeMeta[effectiveSelectedStatus ?? selectedCabinet.status].label}
+                      {resolvedStatusMeta.label}
                     </Text>
                     <Button
                       mt={2}
