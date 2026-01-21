@@ -96,6 +96,13 @@ export const returnCabinet = async (
   return toActionResult(data)
 }
 
+export const checkReturnImage = async (file: File): Promise<LockerActionResult> => {
+  const formData = new FormData()
+  formData.append('file', file)
+  const { data } = await apiClient.post('/v4/lent/check-image', formData)
+  return toActionResult(data)
+}
+
 export const buyStoreItem = async (itemId: number): Promise<LockerActionResult> => {
   const { data } = await apiClient.post(`/v4/store/buy/${itemId}`, {})
   return toActionResult(data)

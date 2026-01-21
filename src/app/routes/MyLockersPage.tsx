@@ -31,6 +31,7 @@ import { EmptyState } from '@/components/molecules/EmptyState'
 import { useMeQuery } from '@/features/users/hooks/useMeQuery'
 import {
   useAutoExtensionMutation,
+  useCheckReturnImageMutation,
   useExtendTicketMutation,
   usePenaltyTicketMutation,
   useReturnCabinetMutation,
@@ -42,6 +43,7 @@ import type { UserItemType } from '@/types/user'
 export const MyLockersPage = () => {
   const { data: me, isLoading, isError, refetch } = useMeQuery()
   const returnMutation = useReturnCabinetMutation()
+  const imageCheckMutation = useCheckReturnImageMutation()
   const extendMutation = useExtendTicketMutation()
   const swapMutation = useSwapTicketMutation()
   const penaltyMutation = usePenaltyTicketMutation()
@@ -53,6 +55,9 @@ export const MyLockersPage = () => {
   const [returnPassword, setReturnPassword] = useState('')
   const [forceReturn, setForceReturn] = useState(false)
   const [forceReason, setForceReason] = useState('')
+  const [imageCheckPassed, setImageCheckPassed] = useState(false)
+  const [imageCheckFailures, setImageCheckFailures] = useState(0)
+  const [imageCheckError, setImageCheckError] = useState<string | null>(null)
   const [autoExtensionEnabled, setAutoExtensionEnabled] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [cameraActive, setCameraActive] = useState(false)
@@ -167,8 +172,9 @@ export const MyLockersPage = () => {
       {
         file: returnFile,
         previousPassword: returnPassword.trim(),
-        forceReturn,
-        reason: forceReturn ? forceReason.trim() : undefined,
+        forceReturn: forceReturn || imageCheckFailures >= 2,
+        reason:
+          forceReturn || imageCheckFailures >= 2 ? forceReason.trim() || undefined : undefined,
       },
       {
         onSettled: () => {
@@ -176,9 +182,29 @@ export const MyLockersPage = () => {
           setReturnPassword('')
           setForceReturn(false)
           setForceReason('')
+          setImageCheckPassed(false)
+          setImageCheckFailures(0)
+          setImageCheckError(null)
         },
       },
     )
+  }
+
+  const handleCheckImage = () => {
+    if (!returnFile) return
+    setImageCheckError(null)
+    imageCheckMutation.mutate(returnFile, {
+      onSuccess: () => {
+        setImageCheckPassed(true)
+      },
+      onError: (error) => {
+        const message =
+          error instanceof Error ? error.message : '이미지 검증에 실패했습니다.'
+        setImageCheckPassed(false)
+        setImageCheckFailures((prev) => prev + 1)
+        setImageCheckError(message)
+      },
+    })
   }
 
   const handleAutoExtensionToggle = (enabled: boolean) => {
@@ -283,6 +309,8 @@ export const MyLockersPage = () => {
         if (prev) URL.revokeObjectURL(prev)
         return URL.createObjectURL(file)
       })
+      setImageCheckPassed(false)
+      setImageCheckError(null)
     }, 'image/jpeg', 0.9)
   }
 
@@ -292,6 +320,8 @@ export const MyLockersPage = () => {
       if (prev) URL.revokeObjectURL(prev)
       return file ? URL.createObjectURL(file) : null
     })
+    setImageCheckPassed(false)
+    setImageCheckError(null)
   }
 
   return (
@@ -441,6 +471,30 @@ export const MyLockersPage = () => {
                       <Text fontSize="sm" color={textMuted}>
                         선택됨: {returnFile?.name}
                       </Text>
+                      <Button
+                        size="sm"
+                        colorScheme="brand"
+                        onClick={handleCheckImage}
+                        isDisabled={!returnFile}
+                        isLoading={imageCheckMutation.isPending}
+                      >
+                        다음 (AI 검증)
+                      </Button>
+                      {imageCheckPassed && (
+                        <Text fontSize="sm" color="green.500">
+                          ✅ AI 검증 통과! 비밀번호를 입력해 주세요.
+                        </Text>
+                      )}
+                      {imageCheckError && (
+                        <Text fontSize="sm" color="red.400">
+                          {imageCheckError}
+                        </Text>
+                      )}
+                      {imageCheckFailures >= 2 && (
+                        <Text fontSize="sm" color="orange.500">
+                          AI 검증이 반복 실패했습니다. 수동 반납 사유를 입력해 주세요.
+                        </Text>
+                      )}
                     </Stack>
                   )}
                   <Input
@@ -449,37 +503,46 @@ export const MyLockersPage = () => {
                     onChange={(event) => handleFileSelect(event.target.files?.[0] ?? null)}
                   />
                 </FormControl>
-                <FormControl>
-                  <FormLabel>이전 비밀번호 (4자리)</FormLabel>
-                  <Input
-                    type="password"
-                    maxLength={4}
-                    value={returnPassword}
-                    onChange={(event) => setReturnPassword(event.target.value)}
-                  />
-                </FormControl>
-                <FormControl display="flex" alignItems="center" justifyContent="space-between">
-                  <FormLabel mb={0}>강제 반납</FormLabel>
-                  <Switch
-                    isChecked={forceReturn}
-                    onChange={(event) => setForceReturn(event.target.checked)}
-                  />
-                </FormControl>
-                {forceReturn && (
-                  <FormControl>
-                    <FormLabel>강제 반납 사유</FormLabel>
-                    <Textarea
-                      placeholder="AI 검사 실패 사유"
-                      value={forceReason}
-                      onChange={(event) => setForceReason(event.target.value)}
-                    />
-                  </FormControl>
+                {(imageCheckPassed || imageCheckFailures >= 2 || forceReturn) && (
+                  <>
+                    <FormControl>
+                      <FormLabel>이전 비밀번호 (4자리)</FormLabel>
+                      <Input
+                        type="password"
+                        maxLength={4}
+                        value={returnPassword}
+                        onChange={(event) => setReturnPassword(event.target.value)}
+                      />
+                    </FormControl>
+                    <FormControl display="flex" alignItems="center" justifyContent="space-between">
+                      <FormLabel mb={0}>수동 반납</FormLabel>
+                      <Switch
+                        isChecked={forceReturn || imageCheckFailures >= 2}
+                        onChange={(event) => setForceReturn(event.target.checked)}
+                        isDisabled={imageCheckFailures >= 2}
+                      />
+                    </FormControl>
+                    {(forceReturn || imageCheckFailures >= 2) && (
+                      <FormControl>
+                        <FormLabel>수동 반납 사유</FormLabel>
+                        <Textarea
+                          placeholder="AI 검사 실패 사유"
+                          value={forceReason}
+                          onChange={(event) => setForceReason(event.target.value)}
+                        />
+                      </FormControl>
+                    )}
+                  </>
                 )}
                 <Button
                   colorScheme="red"
                   onClick={handleReturnSubmit}
                   isLoading={returnMutation.isPending}
-                  isDisabled={!returnFile || returnPassword.trim().length !== 4}
+                  isDisabled={
+                    !returnFile ||
+                    returnPassword.trim().length !== 4 ||
+                    (!imageCheckPassed && imageCheckFailures < 2 && !forceReturn)
+                  }
                 >
                   반납 요청
                 </Button>

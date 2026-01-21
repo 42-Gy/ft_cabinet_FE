@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import {
   buyStoreItem,
+  checkReturnImage,
   getCabinetDetail,
   getCabinetSummary,
   getCabinetSummaryAll,
@@ -149,6 +150,19 @@ export const useReturnCabinetMutation = () => {
     onSuccess: (result) => {
       toast({ description: result.message ?? '사물함 반납이 완료되었습니다.', status: 'success' })
       invalidate()
+    },
+    onError: (error) => {
+      toast({ description: parseErrorMessage(error), status: 'error' })
+    },
+  })
+}
+
+export const useCheckReturnImageMutation = () => {
+  const toast = useToast()
+  return useMutation<LockerActionResult, unknown, File>({
+    mutationFn: async (file: File) => checkReturnImage(file),
+    onSuccess: (result) => {
+      toast({ description: result.message ?? '이미지 검증이 완료되었습니다.', status: 'success' })
     },
     onError: (error) => {
       toast({ description: parseErrorMessage(error), status: 'error' })

@@ -54,15 +54,17 @@ const cabinetStatusOptions: CabinetStatusValue[] = ['AVAILABLE', 'BROKEN', 'FULL
 const cabinetLentTypeOptions: CabinetLentType[] = ['PRIVATE', 'SHARE', 'CLUB']
 
 const itemGrantOptions = [
-  { label: '연장권', value: 'extensionTicket' },
-  { label: '이사권', value: 'swapTicket' },
-  { label: '알림권', value: 'alarm' },
+  { label: '대여권', value: 'LENT' },
+  { label: '연장권', value: 'EXTENSION' },
+  { label: '이사권', value: 'SWAP' },
+  { label: '패널티 감면권', value: 'PENALTY_EXEMPTION' },
 ]
 
 const priceItemOptions = [
-  { label: '연장권', value: 'extensionTicket' },
-  { label: '이사권', value: 'swapTicket' },
-  { label: '알림권', value: 'alarm' },
+  { label: '대여권', value: 'LENT' },
+  { label: '연장권', value: 'EXTENSION' },
+  { label: '이사권', value: 'SWAP' },
+  { label: '패널티 감면권', value: 'PENALTY_EXEMPTION' },
 ]
 
 export const AdminDashboard = () => {
@@ -309,10 +311,15 @@ export const AdminDashboard = () => {
                   ) : pendingQuery.isError ? (
                     <ErrorState onRetry={pendingQuery.refetch} />
                   ) : pendingQuery.data?.length ? (
-                    <Stack spacing={3}>
+                    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
                       {pendingQuery.data.map((item) => (
                         <Box key={item.visibleNum} borderWidth={1} borderRadius="lg" p={3}>
                           <Text fontWeight="semibold">#{item.visibleNum}</Text>
+                          {item.intraId && (
+                            <Text fontSize="sm" color={mutedText}>
+                              {item.intraId}
+                            </Text>
+                          )}
                           <Text fontSize="sm" color={mutedText}>
                             {item.statusNote ?? '사유 없음'}
                           </Text>
@@ -337,7 +344,7 @@ export const AdminDashboard = () => {
                           </Button>
                         </Box>
                       ))}
-                    </Stack>
+                    </SimpleGrid>
                   ) : (
                     <EmptyState title="승인 대기 항목이 없습니다" />
                   )}
