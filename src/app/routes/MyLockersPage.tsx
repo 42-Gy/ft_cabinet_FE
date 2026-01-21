@@ -250,8 +250,15 @@ export const MyLockersPage = () => {
     })
   }
 
+  const isStreamAlive = () => {
+    const stream = streamRef.current
+    if (!stream) return false
+    return stream.getTracks().some((track) => track.readyState === 'live')
+  }
+
   const handleStartCamera = async () => {
-    if (cameraActive || cameraStarting) return
+    if (cameraStarting) return
+    if (cameraActive && isStreamAlive()) return
     try {
       setCameraError(null)
       setCameraReady(false)
@@ -351,7 +358,7 @@ export const MyLockersPage = () => {
     }, 'image/jpeg', 0.9)
   }
 
-  const handleRetakePhoto = () => {
+  const handleRetakePhoto = async () => {
     setReturnFile(null)
     setReturnPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev)
@@ -359,9 +366,8 @@ export const MyLockersPage = () => {
     })
     setImageCheckPassed(false)
     setImageCheckError(null)
-    if (!cameraActive) {
-      handleStartCamera()
-    }
+    handleStopCamera()
+    await handleStartCamera()
   }
 
   const handleFileSelect = (file: File | null) => {
@@ -381,8 +387,16 @@ export const MyLockersPage = () => {
         description="현재 코인, 대여 중인 사물함, 보유한 아이템을 한 번에 확인하세요."
       />
 
-      <Stack spacing={6}>
-        <Box borderRadius="xl" bg={cardBg} p={6} shadow="md" borderWidth={1} borderColor={borderColor}>
+      <Stack spacing={6} direction={{ base: 'column', md: 'row' }} align="flex-start">
+        <Box
+          flex="1"
+          borderRadius="xl"
+          bg={cardBg}
+          p={6}
+          shadow="md"
+          borderWidth={1}
+          borderColor={borderColor}
+        >
           <Stack spacing={3}>
             <Text fontSize="lg" fontWeight="bold">
               내 계정
@@ -450,7 +464,15 @@ export const MyLockersPage = () => {
           )}
         </Box>
 
-        <Box borderRadius="xl" bg={cardBg} p={6} shadow="md" borderWidth={1} borderColor={borderColor}>
+        <Box
+          flex="1"
+          borderRadius="xl"
+          bg={cardBg}
+          p={6}
+          shadow="md"
+          borderWidth={1}
+          borderColor={borderColor}
+        >
           <Stack spacing={3}>
             <Text fontSize="lg" fontWeight="bold">
               내 아이템

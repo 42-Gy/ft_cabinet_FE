@@ -534,9 +534,9 @@ export const LockersPage = () => {
                       const isAvailable = effectiveStatus === 'AVAILABLE'
                       const bgImage = isAvailable
                         ? "url('/assets/images/subak_ncabi.png')"
-                        : effectiveStatus === 'PENDING'
-                          ? "url('/assets/images/subak_holding.png')"
-                          : "url('/assets/images/subak_cabi.png')"
+                        : effectiveStatus === 'FULL'
+                          ? "url('/assets/images/subak_cabi.png')"
+                          : "url('/assets/images/subak_holding.png')"
                       return (
                         <Box
                           key={cabinet.cabinetId}
