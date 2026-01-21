@@ -48,7 +48,8 @@ export const MyLockersPage = () => {
   const swapMutation = useSwapTicketMutation()
   const penaltyMutation = usePenaltyTicketMutation()
   const autoExtensionMutation = useAutoExtensionMutation()
-  const { isOpen, onOpen, onClose: closeModal } = useDisclosure()
+  const swapModal = useDisclosure()
+  const returnModal = useDisclosure()
   const [swapTarget, setSwapTarget] = useState('')
   const [returnFile, setReturnFile] = useState<File | null>(null)
   const [returnPreviewUrl, setReturnPreviewUrl] = useState<string | null>(null)
@@ -119,6 +120,14 @@ export const MyLockersPage = () => {
     })
   }, [cameraActive])
 
+  useEffect(() => {
+    if (returnModal.isOpen) {
+      handleStartCamera()
+      return
+    }
+    handleStopCamera()
+  }, [returnModal.isOpen])
+
   if (isLoading) return <LoadingState label="내 정보를 불러오는 중입니다." />
   if (isError) return <ErrorState onRetry={refetch} />
   if (!me) {
@@ -148,7 +157,7 @@ export const MyLockersPage = () => {
     if (type === 'SWAP') {
       if (!hasLocker) return
       setSwapTarget('')
-      onOpen()
+      swapModal.onOpen()
     }
   }
 
@@ -158,12 +167,27 @@ export const MyLockersPage = () => {
     if (Number.isNaN(numeric)) return
     swapMutation.mutate(numeric, {
       onSuccess: () => {
-        closeModal()
+        swapModal.onClose()
       },
       onSettled: () => {
         setSwapTarget('')
       },
     })
+  }
+
+  const handleReturnClose = () => {
+    if (returnPreviewUrl) URL.revokeObjectURL(returnPreviewUrl)
+    setReturnFile(null)
+    setReturnPreviewUrl(null)
+    setReturnPassword('')
+    setForceReturn(false)
+    setForceReason('')
+    setImageCheckPassed(false)
+    setImageCheckFailures(0)
+    setImageCheckError(null)
+    setCameraError(null)
+    handleStopCamera()
+    returnModal.onClose()
   }
 
   const handleReturnSubmit = () => {
@@ -177,6 +201,9 @@ export const MyLockersPage = () => {
           forceReturn || imageCheckFailures >= 2 ? forceReason.trim() || undefined : undefined,
       },
       {
+        onSuccess: () => {
+          handleReturnClose()
+        },
         onSettled: () => {
           setReturnFile(null)
           setReturnPassword('')
@@ -215,6 +242,7 @@ export const MyLockersPage = () => {
   }
 
   const handleStartCamera = async () => {
+    if (cameraActive || cameraStarting) return
     try {
       setCameraError(null)
       setCameraReady(false)
@@ -388,165 +416,9 @@ export const MyLockersPage = () => {
                   isDisabled={autoExtensionMutation.isPending}
                 />
               </FormControl>
-              <Stack spacing={3}>
-                <FormControl>
-                  <FormLabel>사물함 내부 사진</FormLabel>
-                  <Stack spacing={2} mb={2} align="flex-start">
-                    <Button
-                      size="sm"
-                      onClick={cameraActive ? handleStopCamera : handleStartCamera}
-                      isLoading={cameraStarting}
-                    >
-                      {cameraActive ? '카메라 끄기' : '카메라 켜기'}
-                    </Button>
-                    {cameraError && (
-                      <Text fontSize="sm" color="red.400">
-                        {cameraError}
-                      </Text>
-                    )}
-                    {cameraActive && (
-                      <Stack spacing={2} w="full">
-                        <Box
-                          borderWidth={1}
-                          borderColor={borderColor}
-                          borderRadius="md"
-                          overflow="hidden"
-                          bg="black"
-                          minH="220px"
-                          sx={{ aspectRatio: '16 / 9' }}
-                        >
-                          <video
-                            ref={videoRef}
-                            style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }}
-                            playsInline
-                            muted
-                            autoPlay
-                            onLoadedMetadata={() => {
-                              // eslint-disable-next-line no-console
-                              console.info('[Camera] loaded metadata', {
-                                width: videoRef.current?.videoWidth,
-                                height: videoRef.current?.videoHeight,
-                              })
-                              cameraReadyRef.current = true
-                              setCameraReady(true)
-                              if (cameraTimeoutRef.current) {
-                                clearTimeout(cameraTimeoutRef.current)
-                                cameraTimeoutRef.current = null
-                              }
-                            }}
-                            onCanPlay={() => {
-                              // eslint-disable-next-line no-console
-                              console.info('[Camera] can play')
-                              cameraReadyRef.current = true
-                              setCameraReady(true)
-                              if (cameraTimeoutRef.current) {
-                                clearTimeout(cameraTimeoutRef.current)
-                                cameraTimeoutRef.current = null
-                              }
-                            }}
-                          />
-                        </Box>
-                        <Button
-                          size="sm"
-                          colorScheme="brand"
-                          onClick={handleCapturePhoto}
-                          isDisabled={!cameraReady}
-                        >
-                          {cameraReady ? '사진 찍기' : '카메라 준비 중...'}
-                        </Button>
-                      </Stack>
-                    )}
-                  </Stack>
-                  {returnPreviewUrl && (
-                    <Stack spacing={2} mb={2}>
-                      <Box
-                        borderWidth={1}
-                        borderColor={borderColor}
-                        borderRadius="md"
-                        overflow="hidden"
-                        bg="blackAlpha.200"
-                      >
-                        <img src={returnPreviewUrl} alt="사물함 촬영 미리보기" style={{ width: '100%' }} />
-                      </Box>
-                      <Text fontSize="sm" color={textMuted}>
-                        선택됨: {returnFile?.name}
-                      </Text>
-                      <Button
-                        size="sm"
-                        colorScheme="brand"
-                        onClick={handleCheckImage}
-                        isDisabled={!returnFile}
-                        isLoading={imageCheckMutation.isPending}
-                      >
-                        다음 (AI 검증)
-                      </Button>
-                      {imageCheckPassed && (
-                        <Text fontSize="sm" color="green.500">
-                          ✅ AI 검증 통과! 비밀번호를 입력해 주세요.
-                        </Text>
-                      )}
-                      {imageCheckError && (
-                        <Text fontSize="sm" color="red.400">
-                          {imageCheckError}
-                        </Text>
-                      )}
-                      {imageCheckFailures >= 2 && (
-                        <Text fontSize="sm" color="orange.500">
-                          AI 검증이 반복 실패했습니다. 수동 반납 사유를 입력해 주세요.
-                        </Text>
-                      )}
-                    </Stack>
-                  )}
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(event) => handleFileSelect(event.target.files?.[0] ?? null)}
-                  />
-                </FormControl>
-                {(imageCheckPassed || imageCheckFailures >= 2 || forceReturn) && (
-                  <>
-                    <FormControl>
-                      <FormLabel>이전 비밀번호 (4자리)</FormLabel>
-                      <Input
-                        type="password"
-                        maxLength={4}
-                        value={returnPassword}
-                        onChange={(event) => setReturnPassword(event.target.value)}
-                      />
-                    </FormControl>
-                    <FormControl display="flex" alignItems="center" justifyContent="space-between">
-                      <FormLabel mb={0}>수동 반납</FormLabel>
-                      <Switch
-                        isChecked={forceReturn || imageCheckFailures >= 2}
-                        onChange={(event) => setForceReturn(event.target.checked)}
-                        isDisabled={imageCheckFailures >= 2}
-                      />
-                    </FormControl>
-                    {(forceReturn || imageCheckFailures >= 2) && (
-                      <FormControl>
-                        <FormLabel>수동 반납 사유</FormLabel>
-                        <Textarea
-                          placeholder="AI 검사 실패 사유"
-                          value={forceReason}
-                          onChange={(event) => setForceReason(event.target.value)}
-                        />
-                      </FormControl>
-                    )}
-                  </>
-                )}
-                <Button
-                  colorScheme="red"
-                  onClick={handleReturnSubmit}
-                  isLoading={returnMutation.isPending}
-                  isDisabled={
-                    !returnFile ||
-                    returnPassword.trim().length !== 4 ||
-                    (!imageCheckPassed && imageCheckFailures < 2 && !forceReturn)
-                  }
-                >
-                  반납 요청
-                </Button>
-              </Stack>
+              <Button colorScheme="red" onClick={returnModal.onOpen} alignSelf="flex-start">
+                반납하기
+              </Button>
             </Stack>
           ) : (
             <EmptyState
@@ -624,11 +496,188 @@ export const MyLockersPage = () => {
         </Box>
       </SimpleGrid>
 
+      <Modal isOpen={returnModal.isOpen} onClose={handleReturnClose} size="lg">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>사물함 반납</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Stack spacing={4}>
+              <Text fontSize="sm" color={textMuted}>
+                카메라로 비어있는 사물함 내부를 찍어주세요. 사진 검증 후 비밀번호를 입력하면 반납이 완료됩니다.
+              </Text>
+              <FormControl>
+                <FormLabel>사물함 내부 사진</FormLabel>
+                <Stack spacing={2} mb={2} align="flex-start">
+                  <Button
+                    size="sm"
+                    onClick={cameraActive ? handleStopCamera : handleStartCamera}
+                    isLoading={cameraStarting}
+                  >
+                    {cameraActive ? '카메라 끄기' : '카메라 켜기'}
+                  </Button>
+                  {cameraError && (
+                    <Text fontSize="sm" color="red.400">
+                      {cameraError}
+                    </Text>
+                  )}
+                  {cameraActive && (
+                    <Stack spacing={2} w="full">
+                      <Box
+                        borderWidth={1}
+                        borderColor={borderColor}
+                        borderRadius="md"
+                        overflow="hidden"
+                        bg="black"
+                        minH="220px"
+                        sx={{ aspectRatio: '16 / 9' }}
+                      >
+                        <video
+                          ref={videoRef}
+                          style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }}
+                          playsInline
+                          muted
+                          autoPlay
+                          onLoadedMetadata={() => {
+                            // eslint-disable-next-line no-console
+                            console.info('[Camera] loaded metadata', {
+                              width: videoRef.current?.videoWidth,
+                              height: videoRef.current?.videoHeight,
+                            })
+                            cameraReadyRef.current = true
+                            setCameraReady(true)
+                            if (cameraTimeoutRef.current) {
+                              clearTimeout(cameraTimeoutRef.current)
+                              cameraTimeoutRef.current = null
+                            }
+                          }}
+                          onCanPlay={() => {
+                            // eslint-disable-next-line no-console
+                            console.info('[Camera] can play')
+                            cameraReadyRef.current = true
+                            setCameraReady(true)
+                            if (cameraTimeoutRef.current) {
+                              clearTimeout(cameraTimeoutRef.current)
+                              cameraTimeoutRef.current = null
+                            }
+                          }}
+                        />
+                      </Box>
+                      <Button
+                        size="sm"
+                        colorScheme="brand"
+                        onClick={handleCapturePhoto}
+                        isDisabled={!cameraReady}
+                      >
+                        {cameraReady ? '사진 찍기' : '카메라 준비 중...'}
+                      </Button>
+                    </Stack>
+                  )}
+                </Stack>
+                {returnPreviewUrl && (
+                  <Stack spacing={2} mb={2}>
+                    <Box
+                      borderWidth={1}
+                      borderColor={borderColor}
+                      borderRadius="md"
+                      overflow="hidden"
+                      bg="blackAlpha.200"
+                    >
+                      <img src={returnPreviewUrl} alt="사물함 촬영 미리보기" style={{ width: '100%' }} />
+                    </Box>
+                    <Text fontSize="sm" color={textMuted}>
+                      선택됨: {returnFile?.name}
+                    </Text>
+                    <Button
+                      size="sm"
+                      colorScheme="brand"
+                      onClick={handleCheckImage}
+                      isDisabled={!returnFile}
+                      isLoading={imageCheckMutation.isPending}
+                    >
+                      다음 (AI 검증)
+                    </Button>
+                    {imageCheckPassed && (
+                      <Text fontSize="sm" color="green.500">
+                        ✅ AI 검증 통과! 비밀번호를 입력해 주세요.
+                      </Text>
+                    )}
+                    {imageCheckError && (
+                      <Text fontSize="sm" color="red.400">
+                        {imageCheckError}
+                      </Text>
+                    )}
+                    {imageCheckFailures >= 2 && (
+                      <Text fontSize="sm" color="orange.500">
+                        AI 검증이 반복 실패했습니다. 수동 반납 사유를 입력해 주세요.
+                      </Text>
+                    )}
+                  </Stack>
+                )}
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => handleFileSelect(event.target.files?.[0] ?? null)}
+                />
+              </FormControl>
+              {(imageCheckPassed || imageCheckFailures >= 2 || forceReturn) && (
+                <>
+                  <FormControl>
+                    <FormLabel>이전 비밀번호 (4자리)</FormLabel>
+                    <Input
+                      type="password"
+                      maxLength={4}
+                      value={returnPassword}
+                      onChange={(event) => setReturnPassword(event.target.value)}
+                    />
+                  </FormControl>
+                  <FormControl display="flex" alignItems="center" justifyContent="space-between">
+                    <FormLabel mb={0}>수동 반납</FormLabel>
+                    <Switch
+                      isChecked={forceReturn || imageCheckFailures >= 2}
+                      onChange={(event) => setForceReturn(event.target.checked)}
+                      isDisabled={imageCheckFailures >= 2}
+                    />
+                  </FormControl>
+                  {(forceReturn || imageCheckFailures >= 2) && (
+                    <FormControl>
+                      <FormLabel>수동 반납 사유</FormLabel>
+                      <Textarea
+                        placeholder="AI 검사 실패 사유"
+                        value={forceReason}
+                        onChange={(event) => setForceReason(event.target.value)}
+                      />
+                    </FormControl>
+                  )}
+                </>
+              )}
+            </Stack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={handleReturnClose}>
+              닫기
+            </Button>
+            <Button
+              colorScheme="red"
+              onClick={handleReturnSubmit}
+              isLoading={returnMutation.isPending}
+              isDisabled={
+                !returnFile ||
+                returnPassword.trim().length !== 4 ||
+                (!imageCheckPassed && imageCheckFailures < 2 && !forceReturn)
+              }
+            >
+              반납 요청
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       <Modal
-        isOpen={isOpen}
+        isOpen={swapModal.isOpen}
         onClose={() => {
           setSwapTarget('')
-          closeModal()
+          swapModal.onClose()
         }}
       >
         <ModalOverlay />
@@ -652,7 +701,7 @@ export const MyLockersPage = () => {
               mr={3}
               onClick={() => {
                 setSwapTarget('')
-                closeModal()
+                swapModal.onClose()
               }}
             >
               취소
