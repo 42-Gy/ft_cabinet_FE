@@ -35,7 +35,6 @@ import {
 } from '@chakra-ui/react'
 import { MdChevronLeft, MdChevronRight } from 'react-icons/md'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { useLocation } from 'react-router-dom'
 import { PageHeader } from '@/components/molecules/PageHeader'
 import { LoadingState } from '@/components/molecules/LoadingState'
 import { ErrorState } from '@/components/molecules/ErrorState'
@@ -80,7 +79,6 @@ export const LockersPage = () => {
   const hasLocker = Boolean(me?.lentCabinetId)
   const swapTicketCount = me?.myItems?.filter((item) => item.itemType === 'SWAP').length ?? 0
   const hasSwapTicket = swapTicketCount > 0
-  const location = useLocation()
   const [activeFloor, setActiveFloor] = useState<number | null>(lockerFloors[0] ?? null)
   const [activeSectionId, setActiveSectionId] = useState<number | null>(null)
   const [viewMode, setViewMode] = useState<'map' | 'detail'>('map')
