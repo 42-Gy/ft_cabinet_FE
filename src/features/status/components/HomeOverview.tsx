@@ -138,19 +138,21 @@ export const HomeOverview = ({ summaryAll, summaryError, onRetry }: HomeOverview
 
   return (
     <Stack spacing={10} w="full">
-      <Box borderRadius="2xl" borderWidth={1} borderColor="whiteAlpha.200" p={6}>
-        <Text fontWeight="bold" mb={4}>
-          SUBAK 안내서
-        </Text>
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+      <Box borderRadius="2xl" borderWidth={1} borderColor="whiteAlpha.200">
+        <Box pt={6}>
+          <Text fontWeight="bold" mb={4}>
+            SUBAK 안내서
+          </Text>
+        </Box>
+        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} pb={6}>
           {guideCards.map((guide) => (
             <Box
               key={guide.title}
               borderRadius="xl"
               borderWidth={1}
               borderColor="whiteAlpha.200"
-              p={6}
               cursor="pointer"
+              p={6}
               minH="260px"
               textAlign="center"
               bgGradient={

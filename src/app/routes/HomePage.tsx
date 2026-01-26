@@ -5,6 +5,7 @@ import { HomeOverview } from '@/features/status/components/HomeOverview'
 export const HomePage = () => {
   const summaryQuery = useCabinetSummaryAllQuery()
   const isLoading = summaryQuery.isLoading
+  const contentWidth = 'min(1136px, calc(100% - 64px))'
 
   return (
     <Box minH="100vh" pb={{ base: 10, md: 12 }}>
@@ -24,7 +25,7 @@ export const HomePage = () => {
           pb={{ base: 10, md: 12 }}
         >
           <Box
-            w="min(1200px, calc(100% - 64px))"
+            w={contentWidth}
             mx="auto"
             h={{ base: 'auto', md: '380px' }}
             borderRadius="28px"
