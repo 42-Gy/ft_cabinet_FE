@@ -34,6 +34,7 @@ import {
 } from '@chakra-ui/react'
 import { MdChevronLeft, MdChevronRight } from 'react-icons/md'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
 import { PageHeader } from '@/components/molecules/PageHeader'
 import { LoadingState } from '@/components/molecules/LoadingState'
 import { ErrorState } from '@/components/molecules/ErrorState'
@@ -41,6 +42,7 @@ import { EmptyState } from '@/components/molecules/EmptyState'
 import {
   useCabinetDetailQuery,
   useCabinetsQuery,
+  useCabinetSummaryQuery,
   useCheckReturnImageMutation,
   useRentCabinetMutation,
   useReserveCabinetMutation,
@@ -77,6 +79,8 @@ export const LockersPage = () => {
   const hasLocker = Boolean(me?.lentCabinetId)
   const swapTicketCount = me?.myItems?.filter((item) => item.itemType === 'SWAP').length ?? 0
   const hasSwapTicket = swapTicketCount > 0
+  const location = useLocation()
+  const isSwapMode = Boolean((location.state as { swap?: boolean } | null)?.swap)
   const [activeFloor, setActiveFloor] = useState<number | null>(lockerFloors[0] ?? null)
   const [activeSectionId, setActiveSectionId] = useState<number | null>(null)
   const [viewMode, setViewMode] = useState<'map' | 'detail'>('map')
@@ -204,6 +208,10 @@ export const LockersPage = () => {
     floor: activeFloor ?? undefined,
     enabled: Boolean(activeFloor !== null && viewMode === 'detail'),
   })
+  const summaryQuery = useCabinetSummaryQuery({
+    floor: activeFloor ?? undefined,
+    enabled: Boolean(activeFloor !== null && viewMode === 'map'),
+  })
 
   const cabinetsForSection = useMemo(() => {
     if (!currentSection || !Array.isArray(cabinetsQuery.data)) return []
@@ -219,6 +227,17 @@ export const LockersPage = () => {
   const chunkedCabinets = useMemo(() => chunkArray(cabinetsForSection, 20), [cabinetsForSection])
 
   const displayCabinets = chunkedCabinets[sectionPageIndex] ?? []
+
+  const sectionStats = useMemo(() => {
+    const stats: Record<number, { total: number; available: number }> = {}
+    if (!Array.isArray(summaryQuery.data)) return stats
+    summaryQuery.data.forEach((item) => {
+      const id = extractSectionId(item.section)
+      if (!id) return
+      stats[id] = { total: item.total, available: item.availableCount }
+    })
+    return stats
+  }, [summaryQuery.data])
 
   useEffect(() => {
     if (sectionPageIndex > chunkedCabinets.length - 1) {
@@ -331,6 +350,7 @@ export const LockersPage = () => {
       isLoggedIn &&
       hasLocker &&
       hasSwapTicket &&
+      isSwapMode &&
       effectiveSelectedStatus === 'AVAILABLE' &&
       selectedCabinet.visibleNum !== me?.visibleNum,
   )
@@ -622,33 +642,36 @@ export const LockersPage = () => {
           </Stack>
           <Divider />
           <Stack spacing={2}>
-            <Button
-              colorScheme="brand"
-              isDisabled={!isLoggedIn || detail.status !== 'AVAILABLE' || hasLocker}
-              isLoading={rentMutation.isPending && rentMutation.variables === detail.visibleNum}
-              onClick={() =>
-                isLoggedIn &&
-                detail.status === 'AVAILABLE' &&
-                !hasLocker &&
-                rentMutation.mutate(detail.visibleNum, {
-                  onSuccess: () => markCabinetRented(detail.visibleNum),
-                })
-              }
-            >
-              {isLoggedIn ? (hasLocker ? '이미 사물함을 이용 중입니다' : '이 사물함 대여하기') : '로그인 후 대여 가능'}
-            </Button>
-            <Button
-              variant="outline"
-              colorScheme="brand"
-              isDisabled={!isLoggedIn || !hasSwapTicket || detail.status !== 'AVAILABLE' || detail.visibleNum === me?.visibleNum}
-              onClick={() => {
-                if (!isLoggedIn || !hasSwapTicket || detail.status !== 'AVAILABLE') return
-                setSelectedCabinetId(detail.cabinetId)
-                handleSwapStart()
-              }}
-            >
-              {hasSwapTicket ? '이사하기' : '이사권이 필요합니다'}
-            </Button>
+            {!hasLocker && (
+              <Button
+                colorScheme="brand"
+                isDisabled={!isLoggedIn || detail.status !== 'AVAILABLE'}
+                isLoading={rentMutation.isPending && rentMutation.variables === detail.visibleNum}
+                onClick={() =>
+                  isLoggedIn &&
+                  detail.status === 'AVAILABLE' &&
+                  rentMutation.mutate(detail.visibleNum, {
+                    onSuccess: () => markCabinetRented(detail.visibleNum),
+                  })
+                }
+              >
+                {isLoggedIn ? '이 사물함 대여하기' : '로그인 후 대여 가능'}
+              </Button>
+            )}
+            {isSwapMode && (
+              <Button
+                variant="outline"
+                colorScheme="brand"
+                isDisabled={!canSwapSelected}
+                onClick={() => {
+                  if (!canSwapSelected) return
+                  setSelectedCabinetId(detail.cabinetId)
+                  handleSwapStart()
+                }}
+              >
+                {hasSwapTicket ? '이사하기' : '이사권이 필요합니다'}
+              </Button>
+            )}
           </Stack>
         </Stack>
       )
@@ -720,6 +743,7 @@ export const LockersPage = () => {
                 sections={sectionsForFloor}
                 activeSectionId={activeSectionId}
                 onSelect={handleSectionSelect}
+                sectionStats={sectionStats}
               />
             ) : (
               <EmptyState title="지도 정보가 없습니다" description="다른 층을 선택해 주세요." />
@@ -889,30 +913,30 @@ export const LockersPage = () => {
                       {resolvedStatusMeta.label}
                     </Text>
                     <HStack spacing={3} flexWrap="wrap">
-                      <Button
-                        mt={2}
-                        colorScheme="brand"
-                        isDisabled={!canRentSelected}
-                        isLoading={
-                          rentMutation.isPending && rentMutation.variables === selectedCabinet.visibleNum
-                        }
-                        onClick={handleRentSelectedCabinet}
-                      >
-                        {isLoggedIn
-                          ? hasLocker
-                            ? '이미 사물함을 이용 중입니다'
-                            : '이 사물함 대여하기'
-                          : '로그인 후 대여 가능'}
-                      </Button>
-                      <Button
-                        mt={2}
-                        variant="outline"
-                        colorScheme="brand"
-                        isDisabled={!canSwapSelected}
-                        onClick={handleSwapStart}
-                      >
-                        {hasSwapTicket ? '이사하기' : '이사권이 필요합니다'}
-                      </Button>
+                      {!hasLocker && (
+                        <Button
+                          mt={2}
+                          colorScheme="brand"
+                          isDisabled={!canRentSelected}
+                          isLoading={
+                            rentMutation.isPending && rentMutation.variables === selectedCabinet.visibleNum
+                          }
+                          onClick={handleRentSelectedCabinet}
+                        >
+                          {isLoggedIn ? '이 사물함 대여하기' : '로그인 후 대여 가능'}
+                        </Button>
+                      )}
+                      {isSwapMode && (
+                        <Button
+                          mt={2}
+                          variant="outline"
+                          colorScheme="brand"
+                          isDisabled={!canSwapSelected}
+                          onClick={handleSwapStart}
+                        >
+                          {hasSwapTicket ? '이사하기' : '이사권이 필요합니다'}
+                        </Button>
+                      )}
                     </HStack>
                   </Stack>
                 ) : (

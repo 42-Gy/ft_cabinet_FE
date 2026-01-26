@@ -60,6 +60,7 @@ interface FloorSectionMapProps {
   sections: LockerSectionMeta[]
   activeSectionId?: number | null
   onSelect: (section: LockerSectionMeta) => void
+  sectionStats?: Record<number, { total: number; available: number }>
 }
 
 export const FloorSectionMap = ({
@@ -67,6 +68,7 @@ export const FloorSectionMap = ({
   sections,
   activeSectionId,
   onSelect,
+  sectionStats,
 }: FloorSectionMapProps) => {
   const layout = mapLayouts[floor]
   const fallbackTextColor = useColorModeValue('gray.500', 'gray.400')
@@ -116,13 +118,13 @@ export const FloorSectionMap = ({
       >
         <Box
           position="relative"
-          width="90%"
-          height="78%"
+          width="92%"
+          height="82%"
           bg={innerBg}
           borderRadius="lg"
           borderWidth={1}
           borderColor={innerBorder}
-          overflow="hidden"
+          overflow="visible"
         >
           {layout.areas.map((area) => (
             <Box
@@ -149,6 +151,7 @@ export const FloorSectionMap = ({
             const section = getSection(sectionArea.sectionId)
             if (!section) return null
             const isActive = section.id === activeSectionId
+            const stats = sectionStats?.[section.id]
             return (
               <Button
                 key={sectionArea.sectionId}
@@ -160,6 +163,8 @@ export const FloorSectionMap = ({
                 variant="solid"
                 size="sm"
                 fontSize="xs"
+                px={1}
+                py={1}
                 bg={isActive ? 'brand.500' : buttonBg}
                 color={isActive ? 'white' : buttonText}
                 borderWidth={isActive ? 2 : 1}
@@ -168,7 +173,17 @@ export const FloorSectionMap = ({
                 _hover={{ opacity: 0.9 }}
                 onClick={() => onSelect(section)}
               >
-                {section.title}
+                <Stack spacing={0} align="center">
+                  <Text fontSize="xs" fontWeight="bold" lineHeight="shorter">
+                    {section.title}
+                  </Text>
+                  <Text fontSize="10px" lineHeight="shorter">
+                    총 {stats?.total ?? '-'}개
+                  </Text>
+                  <Text fontSize="10px" lineHeight="shorter">
+                    가능 {stats?.available ?? '-'}개
+                  </Text>
+                </Stack>
               </Button>
             )
           })}
