@@ -350,7 +350,6 @@ export const LockersPage = () => {
       isLoggedIn &&
       hasLocker &&
       hasSwapTicket &&
-      isSwapMode &&
       effectiveSelectedStatus === 'AVAILABLE' &&
       selectedCabinet.visibleNum !== me?.visibleNum,
   )
@@ -955,7 +954,7 @@ export const LockersPage = () => {
             {swapStep === 'confirm' ? '이사 예약' : '사물함 반납 후 이사'}
           </ModalHeader>
           <ModalCloseButton />
-          <ModalBody>
+          <ModalBody maxH="70vh" overflowY="auto">
             {swapStep === 'confirm' ? (
               <Stack spacing={4}>
                 <Text fontWeight="bold">
@@ -974,8 +973,16 @@ export const LockersPage = () => {
               </Stack>
             ) : (
               <Stack spacing={4}>
+                <HStack spacing={3}>
+                  <Badge colorScheme="gray">1</Badge>
+                  <Text fontWeight="medium">예약 완료</Text>
+                  <Divider />
+                  <Badge colorScheme="green">2</Badge>
+                  <Text fontWeight="bold">반납 진행</Text>
+                </HStack>
                 <Text fontSize="sm" color={mutedText}>
-                  예약된 사물함으로 이동하려면 현재 사물함을 반납해 주세요.
+                  카메라로 비어있는 사물함 내부를 찍어주세요. 사진 검증 후 비밀번호를 입력하면
+                  이사가 완료됩니다.
                 </Text>
                 <FormControl>
                   <FormLabel>사물함 내부 사진</FormLabel>

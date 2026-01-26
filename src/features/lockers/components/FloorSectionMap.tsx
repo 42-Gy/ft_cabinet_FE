@@ -78,7 +78,7 @@ export const FloorSectionMap = ({
   const buttonBg = useColorModeValue('white', 'gray.700')
   const buttonText = useColorModeValue('gray.700', 'gray.100')
   const buttonBorder = useColorModeValue('gray.200', 'whiteAlpha.300')
-  const areaText = useColorModeValue('gray.700', 'gray.100')
+  const areaText = useColorModeValue('gray.700', 'gray.800')
 
   if (!layout) {
     return (
