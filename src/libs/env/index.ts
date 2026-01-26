@@ -8,7 +8,7 @@ const fallback = {
   authBaseUrl: 'https://ft-cabinet-server-dpa9dkauhkdkajcr.koreacentral-01.azurewebsites.net',
   policyEmail: 'seonghan',
   policyContact: 'Slack DM',
-  policyUpdatedAt: '2025-12-01',
+  policyUpdatedAt: '2025-01-26',
   policySummary:
     '사물함은 1인 1개만 대여 가능하며, 장기 미사용 시 자동 회수됩니다. 파손/분실 시 즉시 운영진에게 보고해 주세요.',
 }
