@@ -15,7 +15,11 @@ import {
   assignPenalty,
   removePenalty,
   grantItem,
+  revokeItem,
+  revokeCoin,
   provideCoin,
+  promoteAdminRole,
+  demoteAdminRole,
   sendEmergencyNotice,
   updateCabinetStatus,
   updateItemPrice,
@@ -30,8 +34,10 @@ import type {
   AdminWeeklyStats,
   CabinetStatusRequest,
   CoinProvideRequest,
+  CoinRevokeRequest,
   EmergencyNoticeRequest,
   ItemGrantRequest,
+  ItemRevokeRequest,
   ItemPriceUpdateRequest,
   LogtimeUpdateRequest,
   PenaltyAssignRequest,
@@ -137,6 +143,21 @@ export const useCoinProvideMutation = () => {
   })
 }
 
+export const useCoinRevokeMutation = () => {
+  const toast = useAdminMutationToast()
+  return useMutation({
+    mutationFn: ({ name, payload }: { name: string; payload: CoinRevokeRequest }) =>
+      revokeCoin(name, payload),
+    onSuccess: (message) => {
+      toast({ description: message ?? '코인 회수 완료', status: 'success' })
+    },
+    onError: (error: unknown) => {
+      const description = error instanceof Error ? error.message : '코인 회수 중 오류가 발생했습니다.'
+      toast({ description, status: 'error' })
+    },
+  })
+}
+
 export const usePenaltyAssignMutation = () => {
   const toast = useAdminMutationToast()
   return useMutation({
@@ -184,6 +205,22 @@ export const useItemGrantMutation = () => {
   })
 }
 
+export const useItemRevokeMutation = () => {
+  const toast = useAdminMutationToast()
+  return useMutation({
+    mutationFn: ({ name, payload }: { name: string; payload: ItemRevokeRequest }) =>
+      revokeItem(name, payload),
+    onSuccess: (message) => {
+      toast({ description: message ?? '아이템 회수 완료', status: 'success' })
+    },
+    onError: (error: unknown) => {
+      const description =
+        error instanceof Error ? error.message : '아이템 회수 중 오류가 발생했습니다.'
+      toast({ description, status: 'error' })
+    },
+  })
+}
+
 export const useLogtimeUpdateMutation = () => {
   const toast = useAdminMutationToast()
   return useMutation({
@@ -195,6 +232,36 @@ export const useLogtimeUpdateMutation = () => {
     onError: (error: unknown) => {
       const description =
         error instanceof Error ? error.message : '로그타임 수정 중 오류가 발생했습니다.'
+      toast({ description, status: 'error' })
+    },
+  })
+}
+
+export const useAdminRolePromoteMutation = () => {
+  const toast = useAdminMutationToast()
+  return useMutation({
+    mutationFn: (name: string) => promoteAdminRole(name),
+    onSuccess: (message) => {
+      toast({ description: message ?? '관리자 권한 부여 완료', status: 'success' })
+    },
+    onError: (error: unknown) => {
+      const description =
+        error instanceof Error ? error.message : '관리자 권한 부여 중 오류가 발생했습니다.'
+      toast({ description, status: 'error' })
+    },
+  })
+}
+
+export const useAdminRoleDemoteMutation = () => {
+  const toast = useAdminMutationToast()
+  return useMutation({
+    mutationFn: (name: string) => demoteAdminRole(name),
+    onSuccess: (message) => {
+      toast({ description: message ?? '관리자 권한 해제 완료', status: 'success' })
+    },
+    onError: (error: unknown) => {
+      const description =
+        error instanceof Error ? error.message : '관리자 권한 해제 중 오류가 발생했습니다.'
       toast({ description, status: 'error' })
     },
   })

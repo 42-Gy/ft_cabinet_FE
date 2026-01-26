@@ -12,8 +12,10 @@ import type {
   AdminWeeklyStats,
   CabinetStatusRequest,
   CoinProvideRequest,
+  CoinRevokeRequest,
   EmergencyNoticeRequest,
   ItemGrantRequest,
+  ItemRevokeRequest,
   ItemPriceUpdateRequest,
   LogtimeUpdateRequest,
   PenaltyAssignRequest,
@@ -56,6 +58,11 @@ export const provideCoin = async (name: string, payload: CoinProvideRequest): Pr
   return unwrapApiResponse<string>(data)
 }
 
+export const revokeCoin = async (name: string, payload: CoinRevokeRequest): Promise<string> => {
+  const { data } = await apiClient.delete(`${BASE_PATH}/users/${name}/coin`, { data: payload })
+  return unwrapApiResponse<string>(data)
+}
+
 export const assignPenalty = async (
   name: string,
   payload: PenaltyAssignRequest,
@@ -74,11 +81,26 @@ export const grantItem = async (name: string, payload: ItemGrantRequest): Promis
   return unwrapApiResponse<string>(data)
 }
 
+export const revokeItem = async (name: string, payload: ItemRevokeRequest): Promise<string> => {
+  const { data } = await apiClient.delete(`${BASE_PATH}/users/${name}/items`, { data: payload })
+  return unwrapApiResponse<string>(data)
+}
+
 export const updateLogtime = async (
   name: string,
   payload: LogtimeUpdateRequest,
 ): Promise<string> => {
   const { data } = await apiClient.patch(`${BASE_PATH}/users/${name}/logtime`, payload)
+  return unwrapApiResponse<string>(data)
+}
+
+export const promoteAdminRole = async (name: string): Promise<string> => {
+  const { data } = await apiClient.post(`${BASE_PATH}/users/${name}/role/admin`, {})
+  return unwrapApiResponse<string>(data)
+}
+
+export const demoteAdminRole = async (name: string): Promise<string> => {
+  const { data } = await apiClient.delete(`${BASE_PATH}/users/${name}/role/admin`)
   return unwrapApiResponse<string>(data)
 }
 

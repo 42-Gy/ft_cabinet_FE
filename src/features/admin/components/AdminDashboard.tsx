@@ -39,11 +39,15 @@ import {
   useAdminWeeklyStatsQuery,
   useCabinetForceReturnMutation,
   useCabinetStatusMutation,
+  useCoinRevokeMutation,
   useCoinProvideMutation,
   useEmergencyNoticeMutation,
+  useItemRevokeMutation,
   useItemGrantMutation,
   useItemPriceUpdateMutation,
   useLogtimeUpdateMutation,
+  useAdminRoleDemoteMutation,
+  useAdminRolePromoteMutation,
   usePenaltyAssignMutation,
   usePenaltyRemoveMutation,
   usePendingCabinetApproveMutation,
@@ -80,10 +84,14 @@ export const AdminDashboard = () => {
   const userQuery = useAdminUserQuery(searchedName)
 
   const coinMutation = useCoinProvideMutation()
+  const coinRevokeMutation = useCoinRevokeMutation()
   const penaltyAssignMutation = usePenaltyAssignMutation()
   const penaltyRemoveMutation = usePenaltyRemoveMutation()
   const itemGrantMutation = useItemGrantMutation()
+  const itemRevokeMutation = useItemRevokeMutation()
   const logtimeMutation = useLogtimeUpdateMutation()
+  const adminPromoteMutation = useAdminRolePromoteMutation()
+  const adminDemoteMutation = useAdminRoleDemoteMutation()
   const cabinetStatusMutation = useCabinetStatusMutation()
   const forceReturnMutation = useCabinetForceReturnMutation()
   const approvePendingMutation = usePendingCabinetApproveMutation()
@@ -92,10 +100,12 @@ export const AdminDashboard = () => {
 
   const [coinAmount, setCoinAmount] = useState('100')
   const [coinReason, setCoinReason] = useState('관리자 지급')
+  const [coinRevokeReason, setCoinRevokeReason] = useState('지급 오류 회수')
   const [penaltyDays, setPenaltyDays] = useState('1')
   const [penaltyReason, setPenaltyReason] = useState('관리자 부여')
   const [itemName, setItemName] = useState(itemGrantOptions[0].value)
   const [itemReason, setItemReason] = useState('관리자 지급')
+  const [itemRevokeName, setItemRevokeName] = useState(itemGrantOptions[0].value)
   const [logtimeValue, setLogtimeValue] = useState('0')
 
   const [cabinetNumInput, setCabinetNumInput] = useState('')
@@ -392,6 +402,34 @@ export const AdminDashboard = () => {
                       </Text>
                       <Text color={mutedText}>{userData.email}</Text>
                     </Stack>
+                    <HStack spacing={3}>
+                      <Button
+                        size="sm"
+                        colorScheme="brand"
+                        variant="outline"
+                        isLoading={adminPromoteMutation.isPending}
+                        onClick={() =>
+                          adminPromoteMutation.mutate(userData.name, {
+                            onSuccess: () => userQuery.refetch(),
+                          })
+                        }
+                      >
+                        관리자 권한 부여
+                      </Button>
+                      <Button
+                        size="sm"
+                        colorScheme="gray"
+                        variant="outline"
+                        isLoading={adminDemoteMutation.isPending}
+                        onClick={() =>
+                          adminDemoteMutation.mutate(userData.name, {
+                            onSuccess: () => userQuery.refetch(),
+                          })
+                        }
+                      >
+                        관리자 권한 해제
+                      </Button>
+                    </HStack>
                     <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                       <InfoItem label="코인" value={`${Number(userData.coin ?? 0).toLocaleString()} 개`} />
                       <InfoItem label="패널티 일수" value={`${userData.penaltyDays ?? 0} 일`} />
@@ -414,21 +452,44 @@ export const AdminDashboard = () => {
                             value={coinReason}
                             onChange={(event) => setCoinReason(event.target.value)}
                           />
-                          <Button
-                            colorScheme="green"
-                            isLoading={coinMutation.isPending}
-                            onClick={() =>
-                              coinMutation.mutate(
-                                {
-                                  name: userData.name,
-                                  payload: { amount: Number(coinAmount), reason: coinReason },
-                                },
-                                { onSuccess: () => userQuery.refetch() },
-                              )
-                            }
-                          >
-                            코인 지급
-                          </Button>
+                          <HStack spacing={3}>
+                            <Button
+                              colorScheme="green"
+                              isLoading={coinMutation.isPending}
+                              onClick={() =>
+                                coinMutation.mutate(
+                                  {
+                                    name: userData.name,
+                                    payload: { amount: Number(coinAmount), reason: coinReason },
+                                  },
+                                  { onSuccess: () => userQuery.refetch() },
+                                )
+                              }
+                            >
+                              코인 지급
+                            </Button>
+                            <Button
+                              colorScheme="red"
+                              variant="outline"
+                              isLoading={coinRevokeMutation.isPending}
+                              onClick={() =>
+                                coinRevokeMutation.mutate(
+                                  {
+                                    name: userData.name,
+                                    payload: { amount: Number(coinAmount), reason: coinRevokeReason },
+                                  },
+                                  { onSuccess: () => userQuery.refetch() },
+                                )
+                              }
+                            >
+                              코인 회수
+                            </Button>
+                          </HStack>
+                          <Textarea
+                            placeholder="회수 사유"
+                            value={coinRevokeReason}
+                            onChange={(event) => setCoinRevokeReason(event.target.value)}
+                          />
                         </Stack>
                       </FormControl>
                       <FormControl>
@@ -529,6 +590,29 @@ export const AdminDashboard = () => {
                             }
                           >
                             아이템 지급
+                          </Button>
+                          <Select value={itemRevokeName} onChange={(event) => setItemRevokeName(event.target.value)}>
+                            {itemGrantOptions.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </Select>
+                          <Button
+                            colorScheme="red"
+                            variant="outline"
+                            isLoading={itemRevokeMutation.isPending}
+                            onClick={() =>
+                              itemRevokeMutation.mutate(
+                                {
+                                  name: userData.name,
+                                  payload: { itemName: itemRevokeName },
+                                },
+                                { onSuccess: () => userQuery.refetch() },
+                              )
+                            }
+                          >
+                            아이템 회수
                           </Button>
                         </Stack>
                       </FormControl>

@@ -23,6 +23,11 @@ export interface CoinProvideRequest {
   reason: string
 }
 
+export interface CoinRevokeRequest {
+  amount: number
+  reason: string
+}
+
 export interface PenaltyAssignRequest {
   penaltyDays: number
   reason: string
@@ -31,6 +36,10 @@ export interface PenaltyAssignRequest {
 export interface ItemGrantRequest {
   itemName: string
   reason: string
+}
+
+export interface ItemRevokeRequest {
+  itemName: string
 }
 
 export interface LogtimeUpdateRequest {
