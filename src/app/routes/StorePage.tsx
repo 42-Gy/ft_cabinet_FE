@@ -66,7 +66,7 @@ export const StorePage = () => {
         description="연장권/이사권/패널티 감면권을 수박씨로 즉시 구매할 수 있어요."
       />
       <Box borderWidth={1} borderRadius="xl" bg={cardBg} p={6} borderColor={borderColor} shadow="sm">
-        <Text fontWeight="bold">보유 코인</Text>
+        <Text fontWeight="bold">보유 수박씨</Text>
         <Text fontSize="2xl" fontWeight="black">
           {typeof me?.coin === 'number' ? me.coin.toLocaleString() : '-'} 개
         </Text>

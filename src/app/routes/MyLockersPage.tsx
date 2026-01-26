@@ -228,8 +228,7 @@ export const MyLockersPage = () => {
         setReturnStep('password')
       },
       onError: (error) => {
-        const message =
-          error instanceof Error ? error.message : '이미지 검증에 실패했습니다.'
+        const message = '사물함 내부가 비어있는지 다시 확인해 주세요.'
         setImageCheckPassed(false)
         setImageCheckFailures((prev) => prev + 1)
         setImageCheckError(message)
@@ -355,6 +354,7 @@ export const MyLockersPage = () => {
       })
       setImageCheckPassed(false)
       setImageCheckError(null)
+      handleStopCamera()
     }, 'image/jpeg', 0.9)
   }
 
@@ -366,6 +366,7 @@ export const MyLockersPage = () => {
     })
     setImageCheckPassed(false)
     setImageCheckError(null)
+    setReturnStep('photo')
     handleStopCamera()
     await handleStartCamera()
   }
@@ -389,7 +390,8 @@ export const MyLockersPage = () => {
 
       <Stack spacing={6} direction={{ base: 'column', md: 'row' }} align="flex-start">
         <Box
-          flex="1"
+          flex={{ base: 'none', md: 1 }}
+          w={{ base: 'full', md: 'auto' }}
           borderRadius="xl"
           bg={cardBg}
           p={6}
@@ -465,7 +467,8 @@ export const MyLockersPage = () => {
         </Box>
 
         <Box
-          flex="1"
+          flex={{ base: 'none', md: 1 }}
+          w={{ base: 'full', md: 'auto' }}
           borderRadius="xl"
           bg={cardBg}
           p={6}
@@ -574,7 +577,7 @@ export const MyLockersPage = () => {
                           {cameraError}
                         </Text>
                       )}
-                      {cameraActive && (
+                      {cameraActive && !returnPreviewUrl && (
                         <Stack spacing={2} w="full">
                           <Box
                             borderWidth={1}

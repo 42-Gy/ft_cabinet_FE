@@ -375,7 +375,7 @@ export const LockersPage = () => {
     <Box maxW="980px" mx="auto" px={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }}>
       <Stack spacing={6}>
         <PageHeader
-          title="섹션별 락커"
+          title="섹션별 사물함"
           description="SUBAK의 수박 지도에서 위치를 선택하고, 상세 화면에서 실시간 상태를 확인한 뒤 대여하세요."
         />
 

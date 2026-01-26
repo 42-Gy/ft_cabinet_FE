@@ -5,7 +5,7 @@ import { HomeOverview } from '@/features/status/components/HomeOverview'
 export const HomePage = () => {
   const summaryQuery = useCabinetSummaryAllQuery()
   const isLoading = summaryQuery.isLoading
-  const contentWidth = 'min(1136px, calc(100% - 64px))'
+  const contentWidth = 'min(1200px, calc(100% - 64px))'
 
   return (
     <Box minH="100vh" pb={{ base: 10, md: 12 }}>
@@ -111,11 +111,15 @@ export const HomePage = () => {
         </Box>
 
         {!isLoading && (
-          <HomeOverview
-            summaryAll={summaryQuery.data}
-            summaryError={summaryQuery.isError}
-            onRetry={summaryQuery.refetch}
-          />
+          <Box w="100vw" position="relative" left="50%" right="50%" ml="-50vw" mr="-50vw">
+            <Box w={contentWidth} mx="auto">
+              <HomeOverview
+                summaryAll={summaryQuery.data}
+                summaryError={summaryQuery.isError}
+                onRetry={summaryQuery.refetch}
+              />
+            </Box>
+          </Box>
         )}
       </VStack>
     </Box>

@@ -13,7 +13,7 @@ const statusLegend = [
 export const LockerMapPlaceholder = ({ description }: LockerMapPlaceholderProps) => {
   return (
     <Stack spacing={4} w="full">
-      <Heading size="sm">락커 맵</Heading>
+      <Heading size="sm">사물함 맵</Heading>
       <Box
         borderRadius="lg"
         borderWidth={1}
