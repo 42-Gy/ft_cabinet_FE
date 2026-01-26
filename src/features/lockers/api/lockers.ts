@@ -108,14 +108,34 @@ export const buyStoreItem = async (itemId: number): Promise<LockerActionResult> 
   return toActionResult(data)
 }
 
+export const reserveCabinet = async (visibleNum: number): Promise<LockerActionResult> => {
+  const { data } = await apiClient.post(`/v4/lent/reservation/${visibleNum}`, {})
+  return toActionResult(data)
+}
+
 export const useExtensionTicket = async (): Promise<LockerActionResult> => {
   const { data } = await apiClient.post('/v4/lent/extension', {})
   return toActionResult(data)
 }
 
-export const useSwapTicket = async (newCabinetId: number): Promise<LockerActionResult> => {
-  const resolvedId = resolveCabinetId(newCabinetId)
-  const { data } = await apiClient.post(`/v4/lent/swap/${resolvedId}`, {})
+export interface SwapCabinetPayload {
+  newVisibleNum: number
+  file: File
+  previousPassword: string
+  forceReturn: boolean
+  reason?: string
+}
+
+export const swapCabinet = async (payload: SwapCabinetPayload): Promise<LockerActionResult> => {
+  const resolvedId = resolveCabinetId(payload.newVisibleNum)
+  const formData = new FormData()
+  formData.append('file', payload.file)
+  formData.append('previousPassword', payload.previousPassword)
+  formData.append('forceReturn', String(payload.forceReturn))
+  if (payload.reason) {
+    formData.append('reason', payload.reason)
+  }
+  const { data } = await apiClient.post(`/v4/lent/swap/${resolvedId}`, formData)
   return toActionResult(data)
 }
 

@@ -7,11 +7,15 @@ import {
   SimpleGrid,
   Text,
   UnorderedList,
+  useColorModeValue,
 } from '@chakra-ui/react'
 import { PageHeader } from '@/components/molecules/PageHeader'
 import { env } from '@/libs/env'
 
 export const PolicyPage = () => {
+  const cardBg = useColorModeValue('white', 'gray.800')
+  const cardBorder = useColorModeValue('gray.100', 'whiteAlpha.200')
+  const textMuted = useColorModeValue('gray.600', 'gray.300')
   const policyHighlights = [
     {
       title: '사물함 대여',
@@ -48,31 +52,31 @@ export const PolicyPage = () => {
             key={item.title}
             p={5}
             borderRadius="lg"
-            bg="white"
+            bg={cardBg}
             borderWidth={1}
-            borderColor="gray.100"
+            borderColor={cardBorder}
           >
             <Text fontWeight="bold" mb={2}>
               {item.title}
             </Text>
-            <Text fontSize="sm" color="gray.600">
+            <Text fontSize="sm" color={textMuted}>
               {item.description}
             </Text>
           </Box>
         ))}
       </SimpleGrid>
 
-      <Box borderRadius="lg" bg="white" p={6} borderWidth={1} borderColor="gray.100">
+      <Box borderRadius="lg" bg={cardBg} p={6} borderWidth={1} borderColor={cardBorder}>
         <Text fontWeight="bold" mb={4}>
           운영 및 문의
         </Text>
-        <Text fontSize="sm" color="gray.600" mb={4}>
+        <Text fontSize="sm" color={textMuted} mb={4}>
           서비스 관련 문의 및 이슈는 Slack DM / seonghan으로 연락해 주세요.
         </Text>
         <Text fontWeight="bold" mb={4}>
           운영 수칙
         </Text>
-        <UnorderedList spacing={3} color="gray.600">
+        <UnorderedList spacing={3} color={textMuted}>
           <ListItem>사물함은 개인 소지품 보관 용도로만 사용해 주세요.</ListItem>
           <ListItem>음식물 및 악취·오염 우려 물품의 보관은 금지됩니다.</ListItem>
           <ListItem>

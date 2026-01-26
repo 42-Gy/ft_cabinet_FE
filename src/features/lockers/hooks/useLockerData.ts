@@ -9,12 +9,14 @@ import {
   getCabinetSummaryAll,
   getCabinets,
   rentCabinet,
+  reserveCabinet,
   returnCabinet,
+  swapCabinet,
   updateAutoExtension,
   useExtensionTicket,
   usePenaltyTicket,
-  useSwapTicket,
   type ReturnCabinetPayload,
+  type SwapCabinetPayload,
 } from '@/features/lockers/api/lockers'
 import { meQueryKeys } from '@/features/users/hooks/useMeQuery'
 import type { LockerActionResult } from '@/types/locker'
@@ -202,6 +204,19 @@ export const lockerQueryKeys = {
   detail: cabinetDetailKeys,
 }
 
+export const useReserveCabinetMutation = () => {
+  const toast = useToast()
+  return useMutation<LockerActionResult, unknown, number>({
+    mutationFn: async (visibleNum) => reserveCabinet(visibleNum),
+    onSuccess: (result) => {
+      toast({ description: result.message ?? '사물함 예약이 완료되었습니다.', status: 'success' })
+    },
+    onError: (error) => {
+      toast({ description: parseErrorMessage(error), status: 'error' })
+    },
+  })
+}
+
 export const useExtendTicketMutation = () => {
   const toast = useToast()
   const invalidate = useInvalidateLockerQueries()
@@ -218,14 +233,12 @@ export const useExtendTicketMutation = () => {
   })
 }
 
-export const useSwapTicketMutation = () => {
+export const useSwapCabinetMutation = () => {
   const toast = useToast()
   const invalidate = useInvalidateLockerQueries()
 
-  return useMutation<LockerActionResult, unknown, number>({
-    mutationFn: async (targetCabinetId: number) => {
-      return useSwapTicket(targetCabinetId)
-    },
+  return useMutation<LockerActionResult, unknown, SwapCabinetPayload>({
+    mutationFn: async (payload) => swapCabinet(payload),
     onSuccess: (result) => {
       toast({ description: result.message ?? '이사권을 사용했습니다.', status: 'success' })
       invalidate()

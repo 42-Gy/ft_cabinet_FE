@@ -18,10 +18,11 @@ const parseError = (error: unknown) => {
   return '요청 중 문제가 발생했습니다.'
 }
 
-export const useAttendanceQuery = () =>
+export const useAttendanceQuery = (enabled = true) =>
   useQuery({
     queryKey: attendanceKeys.root,
     queryFn: fetchAttendanceDates,
+    enabled,
   })
 
 export const useAttendanceMutation = () => {

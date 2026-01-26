@@ -34,8 +34,8 @@ import {
   useExtendTicketMutation,
   usePenaltyTicketMutation,
   useReturnCabinetMutation,
-  useSwapTicketMutation,
 } from '@/features/lockers/hooks/useLockerData'
+import { useNavigate } from 'react-router-dom'
 import { formatDate } from '@/utils/date'
 import type { UserItemType } from '@/types/user'
 
@@ -44,12 +44,9 @@ export const MyLockersPage = () => {
   const returnMutation = useReturnCabinetMutation()
   const imageCheckMutation = useCheckReturnImageMutation()
   const extendMutation = useExtendTicketMutation()
-  const swapMutation = useSwapTicketMutation()
   const penaltyMutation = usePenaltyTicketMutation()
   const autoExtensionMutation = useAutoExtensionMutation()
-  const swapModal = useDisclosure()
   const returnModal = useDisclosure()
-  const [swapTarget, setSwapTarget] = useState('')
   const [returnFile, setReturnFile] = useState<File | null>(null)
   const [returnPreviewUrl, setReturnPreviewUrl] = useState<string | null>(null)
   const [returnPassword, setReturnPassword] = useState('')
@@ -68,6 +65,7 @@ export const MyLockersPage = () => {
   const streamRef = useRef<MediaStream | null>(null)
   const cameraReadyRef = useRef(false)
   const cameraTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const navigate = useNavigate()
 
   const cardBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200')
@@ -156,23 +154,8 @@ export const MyLockersPage = () => {
     }
     if (type === 'SWAP') {
       if (!hasLocker) return
-      setSwapTarget('')
-      swapModal.onOpen()
+      navigate('/lockers', { state: { swap: true } })
     }
-  }
-
-  const handleSwapConfirm = () => {
-    if (!swapTarget) return
-    const numeric = Number(swapTarget)
-    if (Number.isNaN(numeric)) return
-    swapMutation.mutate(numeric, {
-      onSuccess: () => {
-        swapModal.onClose()
-      },
-      onSettled: () => {
-        setSwapTarget('')
-      },
-    })
   }
 
   const handleReturnClose = () => {
@@ -228,10 +211,10 @@ export const MyLockersPage = () => {
         setReturnStep('password')
       },
       onError: () => {
-        const message = '사물함 내부가 비어있는지 다시 확인해 주세요.'
         setImageCheckPassed(false)
         setImageCheckFailures((prev) => prev + 1)
-        setImageCheckError(message)
+        const remaining = Math.max(0, 2 - (imageCheckFailures + 1))
+        setImageCheckError(`관리자 수동 반납 신청 버튼 활성화까지 ${remaining}회 남았습니다`)
       },
     })
   }
@@ -505,7 +488,6 @@ export const MyLockersPage = () => {
                   count={getCount('SWAP')}
                   buttonLabel="이동하기"
                   onClick={() => handleUseTicket('SWAP')}
-                  isLoading={swapMutation.isPending}
                   isDisabled={!hasLocker}
                   bg={itemBg}
                   textMuted={textMuted}
@@ -565,13 +547,15 @@ export const MyLockersPage = () => {
                   <FormControl>
                     <FormLabel>사물함 내부 사진</FormLabel>
                     <Stack spacing={2} mb={2} align="flex-start">
-                      <Button
-                        size="sm"
-                        onClick={cameraActive ? handleStopCamera : handleStartCamera}
-                        isLoading={cameraStarting}
-                      >
-                        {cameraActive ? '카메라 끄기' : '카메라 켜기'}
-                      </Button>
+                      {!returnPreviewUrl && (
+                        <Button
+                          size="sm"
+                          onClick={cameraActive ? handleStopCamera : handleStartCamera}
+                          isLoading={cameraStarting}
+                        >
+                          {cameraActive ? '카메라 끄기' : '카메라 켜기'}
+                        </Button>
+                      )}
                       {cameraError && (
                         <Text fontSize="sm" color="red.400">
                           {cameraError}
@@ -651,6 +635,9 @@ export const MyLockersPage = () => {
                         <Text fontSize="sm" color={textMuted}>
                           선택됨: {returnFile?.name}
                         </Text>
+                        <Button size="sm" variant="outline" onClick={handleRetakePhoto}>
+                          다시 찍기
+                        </Button>
                         <Button
                           size="sm"
                           colorScheme="brand"
@@ -735,50 +722,6 @@ export const MyLockersPage = () => {
         </ModalContent>
       </Modal>
 
-      <Modal
-        isOpen={swapModal.isOpen}
-        onClose={() => {
-          setSwapTarget('')
-          swapModal.onClose()
-        }}
-      >
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>이사권 사용</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Text fontSize="sm" mb={3}>
-              이동할 사물함 번호를 입력하세요.
-            </Text>
-            <Input
-              type="number"
-              placeholder="예: 2045"
-              value={swapTarget}
-              onChange={(event) => setSwapTarget(event.target.value)}
-            />
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              variant="ghost"
-              mr={3}
-              onClick={() => {
-                setSwapTarget('')
-                swapModal.onClose()
-              }}
-            >
-              취소
-            </Button>
-            <Button
-              colorScheme="brand"
-              onClick={handleSwapConfirm}
-              isDisabled={!swapTarget}
-              isLoading={swapMutation.isPending}
-            >
-              사용
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </Stack>
   )
 }

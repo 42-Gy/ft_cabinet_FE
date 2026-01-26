@@ -28,7 +28,7 @@ const weekdayLabels = ['일', '월', '화', '수', '목', '금', '토']
 export const AttendancePage = () => {
   const { data: me, isLoading: meLoading } = useMeQuery()
   const isLoggedIn = Boolean(me)
-  const { data, isLoading, isError, refetch } = useAttendanceQuery()
+  const { data, isLoading, isError, refetch } = useAttendanceQuery(isLoggedIn)
   const attendanceMutation = useAttendanceMutation()
   const [current] = useState(() => new Date())
 

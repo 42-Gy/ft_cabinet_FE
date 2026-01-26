@@ -9,15 +9,18 @@ interface StateMessageProps {
 }
 
 export const StateMessage = ({ title, description, icon, colorScheme = 'blue' }: StateMessageProps) => {
+  const titleColor = useColorModeValue('gray.800', 'gray.100')
   const descriptionColor = useColorModeValue('gray.600', 'gray.300')
+  const borderColor = useColorModeValue(`${colorScheme}.200`, 'whiteAlpha.200')
+  const bgColor = useColorModeValue(`${colorScheme}.50`, 'whiteAlpha.100')
 
   return (
     <Box
       w="full"
       borderWidth={1}
       borderRadius="lg"
-      borderColor={`${colorScheme}.200`}
-      bg={`${colorScheme}.50`}
+      borderColor={borderColor}
+      bg={bgColor}
       p={6}
       textAlign="center"
     >
@@ -26,7 +29,7 @@ export const StateMessage = ({ title, description, icon, colorScheme = 'blue' }:
           {icon}
         </Box>
       )}
-      <Heading size="md" mb={1}>
+      <Heading size="md" mb={1} color={titleColor}>
         {title}
       </Heading>
       <Text fontSize="sm" color={descriptionColor}>

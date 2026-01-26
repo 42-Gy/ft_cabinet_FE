@@ -17,6 +17,7 @@ export const HomePage = () => {
           right="50%"
           ml="-50vw"
           mr="-50vw"
+          mt={{ base: -5, md: -7 }}
           bgImage="url('/assets/images/bg_full.png')"
           bgRepeat="no-repeat"
           bgSize="cover"

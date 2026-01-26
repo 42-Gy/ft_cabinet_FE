@@ -10,12 +10,23 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerOverlay,
+  FormControl,
+  FormLabel,
   Grid,
   HStack,
   IconButton,
+  Input,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Skeleton,
   Stack,
   Text,
+  Textarea,
   useColorModeValue,
   useDisclosure,
   Wrap,
@@ -30,7 +41,10 @@ import { EmptyState } from '@/components/molecules/EmptyState'
 import {
   useCabinetDetailQuery,
   useCabinetsQuery,
+  useCheckReturnImageMutation,
   useRentCabinetMutation,
+  useReserveCabinetMutation,
+  useSwapCabinetMutation,
 } from '@/features/lockers/hooks/useLockerData'
 import { useMeQuery } from '@/features/users/hooks/useMeQuery'
 import { FloorSectionMap } from '@/features/lockers/components/FloorSectionMap'
@@ -60,6 +74,9 @@ const statusBadgeMeta: Record<
 export const LockersPage = () => {
   const { data: me } = useMeQuery()
   const isLoggedIn = Boolean(me)
+  const hasLocker = Boolean(me?.lentCabinetId)
+  const swapTicketCount = me?.myItems?.filter((item) => item.itemType === 'SWAP').length ?? 0
+  const hasSwapTicket = swapTicketCount > 0
   const [activeFloor, setActiveFloor] = useState<number | null>(lockerFloors[0] ?? null)
   const [activeSectionId, setActiveSectionId] = useState<number | null>(null)
   const [viewMode, setViewMode] = useState<'map' | 'detail'>('map')
@@ -67,8 +84,30 @@ export const LockersPage = () => {
   const [detailCabinetId, setDetailCabinetId] = useState<number | null>(null)
   const [sectionPageIndex, setSectionPageIndex] = useState(0)
   const detailDrawer = useDisclosure()
+  const swapModal = useDisclosure()
+  const [swapStep, setSwapStep] = useState<'confirm' | 'return'>('confirm')
+  const [swapTarget, setSwapTarget] = useState<Cabinet | null>(null)
+  const [swapFile, setSwapFile] = useState<File | null>(null)
+  const [swapPreviewUrl, setSwapPreviewUrl] = useState<string | null>(null)
+  const [swapPassword, setSwapPassword] = useState('')
+  const [swapForceReturn, setSwapForceReturn] = useState(false)
+  const [swapReason, setSwapReason] = useState('')
+  const [swapCheckPassed, setSwapCheckPassed] = useState(false)
+  const [swapCheckFailures, setSwapCheckFailures] = useState(0)
+  const [swapCheckError, setSwapCheckError] = useState<string | null>(null)
+  const [swapCameraError, setSwapCameraError] = useState<string | null>(null)
+  const [swapCameraActive, setSwapCameraActive] = useState(false)
+  const [swapCameraReady, setSwapCameraReady] = useState(false)
+  const [swapCameraStarting, setSwapCameraStarting] = useState(false)
+  const swapVideoRef = useRef<HTMLVideoElement | null>(null)
+  const swapStreamRef = useRef<MediaStream | null>(null)
+  const swapCameraReadyRef = useRef(false)
+  const swapCameraTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const detailQuery = useCabinetDetailQuery(detailDrawer.isOpen ? detailCabinetId : null)
   const rentMutation = useRentCabinetMutation()
+  const reserveMutation = useReserveCabinetMutation()
+  const swapMutation = useSwapCabinetMutation()
+  const checkImageMutation = useCheckReturnImageMutation()
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const [optimisticStatuses, setOptimisticStatuses] = useState<Record<number, CabinetStatus>>({})
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200')
@@ -218,6 +257,48 @@ export const LockersPage = () => {
     }
   }, [currentSection?.id, viewMode])
 
+  useEffect(() => {
+    return () => {
+      if (swapPreviewUrl) URL.revokeObjectURL(swapPreviewUrl)
+      swapStreamRef.current?.getTracks().forEach((track) => track.stop())
+      swapStreamRef.current = null
+      if (swapCameraTimeoutRef.current) {
+        clearTimeout(swapCameraTimeoutRef.current)
+        swapCameraTimeoutRef.current = null
+      }
+    }
+  }, [swapPreviewUrl])
+
+  useEffect(() => {
+    const video = swapVideoRef.current
+    const stream = swapStreamRef.current
+    if (!video || !stream || !swapCameraActive) return
+
+    video.srcObject = stream
+    video.muted = true
+    video.playsInline = true
+    video.setAttribute('playsinline', 'true')
+    video.setAttribute('webkit-playsinline', 'true')
+
+    requestAnimationFrame(() => {
+      video.play().catch((error) => {
+        if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
+          console.error('[SwapCamera] video play failed', error)
+        }
+        setSwapCameraError('카메라 재생을 시작할 수 없습니다.')
+      })
+    })
+  }, [swapCameraActive])
+
+  useEffect(() => {
+    if (swapModal.isOpen && swapStep === 'return') {
+      handleSwapStartCamera()
+      return
+    }
+    handleSwapStopCamera()
+  }, [swapModal.isOpen, swapStep])
+
   const selectedCabinet =
     cabinetsForSection.find((cabinet) => cabinet.cabinetId === selectedCabinetId) ?? null
 
@@ -242,7 +323,17 @@ export const LockersPage = () => {
 
   const effectiveSelectedStatus = selectedCabinet ? getEffectiveStatus(selectedCabinet) : null
 
-  const canRentSelected = Boolean(selectedCabinet && isLoggedIn && effectiveSelectedStatus === 'AVAILABLE')
+  const canRentSelected = Boolean(
+    selectedCabinet && isLoggedIn && !hasLocker && effectiveSelectedStatus === 'AVAILABLE',
+  )
+  const canSwapSelected = Boolean(
+    selectedCabinet &&
+      isLoggedIn &&
+      hasLocker &&
+      hasSwapTicket &&
+      effectiveSelectedStatus === 'AVAILABLE' &&
+      selectedCabinet.visibleNum !== me?.visibleNum,
+  )
   const resolvedStatusMeta =
     statusBadgeMeta[
       (effectiveSelectedStatus ?? selectedCabinet?.status) as CabinetStatus
@@ -276,6 +367,203 @@ export const LockersPage = () => {
     rentMutation.mutate(selectedCabinet.visibleNum, {
       onSuccess: () => markCabinetRented(selectedCabinet.visibleNum),
     })
+  }
+
+  const handleSwapModalClose = () => {
+    if (swapPreviewUrl) URL.revokeObjectURL(swapPreviewUrl)
+    setSwapFile(null)
+    setSwapPreviewUrl(null)
+    setSwapPassword('')
+    setSwapForceReturn(false)
+    setSwapReason('')
+    setSwapCheckPassed(false)
+    setSwapCheckFailures(0)
+    setSwapCheckError(null)
+    setSwapCameraError(null)
+    setSwapStep('confirm')
+    setSwapTarget(null)
+    handleSwapStopCamera()
+    swapModal.onClose()
+  }
+
+  const handleSwapStart = () => {
+    if (!selectedCabinet || !canSwapSelected) return
+    setSwapTarget(selectedCabinet)
+    setSwapStep('confirm')
+    swapModal.onOpen()
+  }
+
+  const handleSwapReserve = () => {
+    if (!swapTarget) return
+    reserveMutation.mutate(swapTarget.visibleNum, {
+      onSuccess: () => {
+        setSwapStep('return')
+      },
+    })
+  }
+
+  const handleSwapSubmit = () => {
+    if (!swapTarget || !swapFile || swapPassword.trim().length !== 4) return
+    swapMutation.mutate(
+      {
+        newVisibleNum: swapTarget.visibleNum,
+        file: swapFile,
+        previousPassword: swapPassword.trim(),
+        forceReturn: swapForceReturn || swapCheckFailures >= 2,
+        reason:
+          swapForceReturn || swapCheckFailures >= 2 ? swapReason.trim() || undefined : undefined,
+      },
+      {
+        onSuccess: () => {
+          handleSwapModalClose()
+        },
+      },
+    )
+  }
+
+  const handleSwapCheckImage = () => {
+    if (!swapFile) return
+    setSwapCheckError(null)
+    checkImageMutation.mutate(swapFile, {
+      onSuccess: () => {
+        setSwapCheckPassed(true)
+        handleSwapStopCamera()
+        setSwapStep('return')
+      },
+      onError: () => {
+        setSwapCheckPassed(false)
+        setSwapCheckFailures((prev) => {
+          const next = prev + 1
+          const remaining = Math.max(0, 2 - next)
+          setSwapCheckError(`관리자 수동 반납 신청 버튼 활성화까지 ${remaining}회 남았습니다`)
+          return next
+        })
+      },
+    })
+  }
+
+  const handleSwapManualReturn = () => {
+    setSwapForceReturn(true)
+    handleSwapStopCamera()
+    setSwapStep('return')
+  }
+
+  const handleSwapFileSelect = (file: File | null) => {
+    setSwapFile(file)
+    setSwapPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return file ? URL.createObjectURL(file) : null
+    })
+    setSwapCheckPassed(false)
+    setSwapCheckError(null)
+  }
+
+  function handleSwapStopCamera() {
+    swapStreamRef.current?.getTracks().forEach((track) => track.stop())
+    swapStreamRef.current = null
+    if (swapVideoRef.current) {
+      swapVideoRef.current.srcObject = null
+    }
+    setSwapCameraActive(false)
+    setSwapCameraReady(false)
+    swapCameraReadyRef.current = false
+    if (swapCameraTimeoutRef.current) {
+      clearTimeout(swapCameraTimeoutRef.current)
+      swapCameraTimeoutRef.current = null
+    }
+  }
+
+  const isSwapStreamAlive = () => {
+    const stream = swapStreamRef.current
+    if (!stream) return false
+    return stream.getTracks().some((track) => track.readyState === 'live')
+  }
+
+  async function handleSwapStartCamera() {
+    if (swapCameraStarting) return
+    if (swapCameraActive && isSwapStreamAlive()) return
+    try {
+      setSwapCameraError(null)
+      setSwapCameraReady(false)
+      setSwapCameraStarting(true)
+      swapCameraReadyRef.current = false
+      if (swapCameraTimeoutRef.current) {
+        clearTimeout(swapCameraTimeoutRef.current)
+        swapCameraTimeoutRef.current = null
+      }
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setSwapCameraError('이 브라우저에서는 카메라를 사용할 수 없습니다.')
+        setSwapCameraStarting(false)
+        return
+      }
+      swapStreamRef.current?.getTracks().forEach((track) => track.stop())
+      swapStreamRef.current = null
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false,
+      })
+      swapStreamRef.current = stream
+      setSwapCameraActive(true)
+      swapCameraTimeoutRef.current = setTimeout(() => {
+        const video = swapVideoRef.current
+        const isReady =
+          Boolean(video && video.readyState >= 2 && video.videoWidth && video.videoHeight) ||
+          swapCameraReadyRef.current
+        if (isReady) {
+          setSwapCameraReady(true)
+          return
+        }
+        setSwapCameraError('카메라 준비가 지연되고 있습니다. 다시 시도해 주세요.')
+        setSwapCameraStarting(false)
+      }, 3000)
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.error('[SwapCamera] getUserMedia failed', error)
+      }
+      setSwapCameraError('카메라 접근이 허용되지 않았습니다.')
+      setSwapCameraActive(false)
+    } finally {
+      setSwapCameraStarting(false)
+    }
+  }
+
+  const handleSwapCapture = () => {
+    if (!swapVideoRef.current) return
+    const video = swapVideoRef.current
+    if (!video.videoWidth || !video.videoHeight) return
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    canvas.toBlob((blob) => {
+      if (!blob) return
+      const file = new File([blob], `swap-${Date.now()}.jpg`, { type: 'image/jpeg' })
+      setSwapFile(file)
+      setSwapPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev)
+        return URL.createObjectURL(file)
+      })
+      setSwapCheckPassed(false)
+      setSwapCheckError(null)
+      handleSwapStopCamera()
+    }, 'image/jpeg', 0.9)
+  }
+
+  const handleSwapRetake = async () => {
+    setSwapFile(null)
+    setSwapPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return null
+    })
+    setSwapCheckPassed(false)
+    setSwapCheckError(null)
+    setSwapStep('return')
+    handleSwapStopCamera()
+    await handleSwapStartCamera()
   }
 
   const renderDetailDrawer = () => {
@@ -333,20 +621,35 @@ export const LockersPage = () => {
             )}
           </Stack>
           <Divider />
+          <Stack spacing={2}>
             <Button
               colorScheme="brand"
-              isDisabled={!isLoggedIn || detail.status !== 'AVAILABLE'}
+              isDisabled={!isLoggedIn || detail.status !== 'AVAILABLE' || hasLocker}
               isLoading={rentMutation.isPending && rentMutation.variables === detail.visibleNum}
               onClick={() =>
                 isLoggedIn &&
                 detail.status === 'AVAILABLE' &&
+                !hasLocker &&
                 rentMutation.mutate(detail.visibleNum, {
                   onSuccess: () => markCabinetRented(detail.visibleNum),
                 })
               }
             >
-              {isLoggedIn ? '이 사물함 대여하기' : '로그인 후 대여 가능'}
+              {isLoggedIn ? (hasLocker ? '이미 사물함을 이용 중입니다' : '이 사물함 대여하기') : '로그인 후 대여 가능'}
             </Button>
+            <Button
+              variant="outline"
+              colorScheme="brand"
+              isDisabled={!isLoggedIn || !hasSwapTicket || detail.status !== 'AVAILABLE' || detail.visibleNum === me?.visibleNum}
+              onClick={() => {
+                if (!isLoggedIn || !hasSwapTicket || detail.status !== 'AVAILABLE') return
+                setSelectedCabinetId(detail.cabinetId)
+                handleSwapStart()
+              }}
+            >
+              {hasSwapTicket ? '이사하기' : '이사권이 필요합니다'}
+            </Button>
+          </Stack>
         </Stack>
       )
     }
@@ -585,17 +888,32 @@ export const LockersPage = () => {
                       상태:{' '}
                       {resolvedStatusMeta.label}
                     </Text>
-                    <Button
-                      mt={2}
-                      colorScheme="brand"
-                      isDisabled={!canRentSelected}
-                      isLoading={
-                        rentMutation.isPending && rentMutation.variables === selectedCabinet.visibleNum
-                      }
-                      onClick={handleRentSelectedCabinet}
-                    >
-                      {isLoggedIn ? '이 사물함 대여하기' : '로그인 후 대여 가능'}
-                    </Button>
+                    <HStack spacing={3} flexWrap="wrap">
+                      <Button
+                        mt={2}
+                        colorScheme="brand"
+                        isDisabled={!canRentSelected}
+                        isLoading={
+                          rentMutation.isPending && rentMutation.variables === selectedCabinet.visibleNum
+                        }
+                        onClick={handleRentSelectedCabinet}
+                      >
+                        {isLoggedIn
+                          ? hasLocker
+                            ? '이미 사물함을 이용 중입니다'
+                            : '이 사물함 대여하기'
+                          : '로그인 후 대여 가능'}
+                      </Button>
+                      <Button
+                        mt={2}
+                        variant="outline"
+                        colorScheme="brand"
+                        isDisabled={!canSwapSelected}
+                        onClick={handleSwapStart}
+                      >
+                        {hasSwapTicket ? '이사하기' : '이사권이 필요합니다'}
+                      </Button>
+                    </HStack>
                   </Stack>
                 ) : (
                   <EmptyState title="선택한 사물함이 없습니다" description="사물함을 선택해 주세요." />
@@ -605,6 +923,211 @@ export const LockersPage = () => {
           </Stack>
         )}
       </Stack>
+
+      <Modal isOpen={swapModal.isOpen} onClose={handleSwapModalClose} size="lg">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>
+            {swapStep === 'confirm' ? '이사 예약' : '사물함 반납 후 이사'}
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {swapStep === 'confirm' ? (
+              <Stack spacing={4}>
+                <Text fontWeight="bold">
+                  이사는 취소할 수 없으며, 반납 절차를 반드시 완료해야 합니다.
+                </Text>
+                <Text fontSize="sm" color={mutedText}>
+                  이사하기를 누르면 선택한 사물함이 15분 동안 예약되며, 그동안 다른 사용자는
+                  대여할 수 없습니다.
+                </Text>
+                {swapTarget && (
+                  <Box borderWidth={1} borderColor={borderColor} borderRadius="lg" p={4} bg={cardBg}>
+                    <Text fontWeight="bold">예약 대상 사물함</Text>
+                    <Text color={mutedText}>#{swapTarget.visibleNum}</Text>
+                  </Box>
+                )}
+              </Stack>
+            ) : (
+              <Stack spacing={4}>
+                <Text fontSize="sm" color={mutedText}>
+                  예약된 사물함으로 이동하려면 현재 사물함을 반납해 주세요.
+                </Text>
+                <FormControl>
+                  <FormLabel>사물함 내부 사진</FormLabel>
+                  <Stack spacing={2} mb={2} align="flex-start">
+                    {!swapPreviewUrl && (
+                      <Button
+                        size="sm"
+                        onClick={swapCameraActive ? handleSwapStopCamera : handleSwapStartCamera}
+                        isLoading={swapCameraStarting}
+                      >
+                        {swapCameraActive ? '카메라 끄기' : '카메라 켜기'}
+                      </Button>
+                    )}
+                    {swapCameraError && (
+                      <Text fontSize="sm" color="red.400">
+                        {swapCameraError}
+                      </Text>
+                    )}
+                    {swapCameraActive && !swapPreviewUrl && (
+                      <Stack spacing={2} w="full">
+                        <Box
+                          borderWidth={1}
+                          borderColor={borderColor}
+                          borderRadius="md"
+                          overflow="hidden"
+                          bg="black"
+                          minH="220px"
+                          sx={{ aspectRatio: '16 / 9' }}
+                        >
+                          <video
+                            ref={swapVideoRef}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              display: 'block',
+                              objectFit: 'cover',
+                            }}
+                            playsInline
+                            muted
+                            autoPlay
+                            onLoadedMetadata={() => {
+                              swapCameraReadyRef.current = true
+                              setSwapCameraReady(true)
+                              if (swapCameraTimeoutRef.current) {
+                                clearTimeout(swapCameraTimeoutRef.current)
+                                swapCameraTimeoutRef.current = null
+                              }
+                            }}
+                            onCanPlay={() => {
+                              swapCameraReadyRef.current = true
+                              setSwapCameraReady(true)
+                              if (swapCameraTimeoutRef.current) {
+                                clearTimeout(swapCameraTimeoutRef.current)
+                                swapCameraTimeoutRef.current = null
+                              }
+                            }}
+                          />
+                        </Box>
+                        <Button
+                          size="sm"
+                          colorScheme="brand"
+                          onClick={handleSwapCapture}
+                          isDisabled={!swapCameraReady}
+                        >
+                          {swapCameraReady ? '사진 찍기' : '카메라 준비 중...'}
+                        </Button>
+                      </Stack>
+                    )}
+                  </Stack>
+                  {swapPreviewUrl && (
+                    <Stack spacing={2} mb={2}>
+                      <Box
+                        borderWidth={1}
+                        borderColor={borderColor}
+                        borderRadius="md"
+                        overflow="hidden"
+                        bg="blackAlpha.200"
+                      >
+                        <img src={swapPreviewUrl} alt="이사 촬영 미리보기" style={{ width: '100%' }} />
+                      </Box>
+                      <Text fontSize="sm" color={mutedText}>
+                        선택됨: {swapFile?.name}
+                      </Text>
+                      <Button size="sm" variant="outline" onClick={handleSwapRetake}>
+                        다시 찍기
+                      </Button>
+                      <Button
+                        size="sm"
+                        colorScheme="brand"
+                        onClick={handleSwapCheckImage}
+                        isDisabled={!swapFile}
+                        isLoading={checkImageMutation.isPending}
+                      >
+                        다음 (AI 검증)
+                      </Button>
+                      {swapCheckError && (
+                        <Text fontSize="sm" color="red.400">
+                          {swapCheckError}
+                        </Text>
+                      )}
+                      {swapCheckPassed && (
+                        <Text fontSize="sm" color="green.500">
+                          ✅ AI 검증 통과! 비밀번호를 입력해 주세요.
+                        </Text>
+                      )}
+                      {swapCheckFailures >= 2 && (
+                        <Button size="sm" variant="outline" colorScheme="orange" onClick={handleSwapManualReturn}>
+                          수동 반납 신청
+                        </Button>
+                      )}
+                    </Stack>
+                  )}
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => handleSwapFileSelect(event.target.files?.[0] ?? null)}
+                  />
+                </FormControl>
+
+                {(swapCheckPassed || swapCheckFailures >= 2 || swapForceReturn) && (
+                  <>
+                    <FormControl>
+                      <FormLabel>이전 비밀번호 (4자리)</FormLabel>
+                      <Input
+                        type="text"
+                        maxLength={4}
+                        value={swapPassword}
+                        onChange={(event) => setSwapPassword(event.target.value)}
+                      />
+                    </FormControl>
+
+                    {(swapForceReturn || swapCheckFailures >= 2) && (
+                      <FormControl>
+                        <FormLabel>수동 반납 사유</FormLabel>
+                        <Textarea
+                          placeholder="AI 검사 실패 사유"
+                          value={swapReason}
+                          onChange={(event) => setSwapReason(event.target.value)}
+                        />
+                      </FormControl>
+                    )}
+                  </>
+                )}
+              </Stack>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={handleSwapModalClose}>
+              닫기
+            </Button>
+            {swapStep === 'confirm' ? (
+              <Button
+                colorScheme="brand"
+                onClick={handleSwapReserve}
+                isDisabled={!swapTarget}
+                isLoading={reserveMutation.isPending}
+              >
+                이사 예약하기
+              </Button>
+            ) : (
+              <Button
+                colorScheme="brand"
+                onClick={handleSwapSubmit}
+                isLoading={swapMutation.isPending}
+                isDisabled={
+                  !swapFile ||
+                  swapPassword.trim().length !== 4 ||
+                  (!swapCheckPassed && swapCheckFailures < 2 && !swapForceReturn)
+                }
+              >
+                이사하기
+              </Button>
+            )}
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {renderDetailDrawer()}
     </Box>
