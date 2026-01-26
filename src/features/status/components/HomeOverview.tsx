@@ -67,6 +67,8 @@ export const HomeOverview = ({ summaryAll, summaryError, onRetry }: HomeOverview
   const highlightBorder = useColorModeValue('gray.100', 'whiteAlpha.200')
   const sectionText = useColorModeValue('gray.600', 'gray.300')
   const guideIconColor = useColorModeValue('leaf.500', 'leaf.300')
+  const guideBorderWidth = useColorModeValue(1, 0)
+  const guideBorderColor = useColorModeValue('gray.100', 'transparent')
   const guideGradients = {
     rent: useColorModeValue('linear(to-b, #e0f7ff, #f5fbff)', 'linear(to-b, gray.800, gray.700)'),
     seed: useColorModeValue('linear(to-b, #e7f8ed, #f6fff8)', 'linear(to-b, gray.800, gray.700)'),
@@ -138,7 +140,7 @@ export const HomeOverview = ({ summaryAll, summaryError, onRetry }: HomeOverview
 
   return (
     <Stack spacing={10} w="full">
-      <Box borderRadius="2xl" borderWidth={1} borderColor="whiteAlpha.200">
+      <Box borderRadius="2xl" borderWidth={guideBorderWidth} borderColor={guideBorderColor}>
         <Box pt={6}>
           <Text fontWeight="bold" mb={4}>
             SUBAK 안내서
@@ -149,8 +151,8 @@ export const HomeOverview = ({ summaryAll, summaryError, onRetry }: HomeOverview
             <Box
               key={guide.title}
               borderRadius="xl"
-              borderWidth={1}
-              borderColor="whiteAlpha.200"
+              borderWidth={guideBorderWidth}
+              borderColor={guideBorderColor}
               cursor="pointer"
               p={10}
               minH="260px"

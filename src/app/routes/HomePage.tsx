@@ -1,4 +1,4 @@
-import { Badge, Box, Button, Image, Stack, Text, VStack } from '@chakra-ui/react'
+import { Badge, Box, Button, Image, Stack, Text, VStack, useColorModeValue } from '@chakra-ui/react'
 import { useCabinetSummaryAllQuery } from '@/features/lockers/hooks/useLockerData'
 import { HomeOverview } from '@/features/status/components/HomeOverview'
 
@@ -6,6 +6,29 @@ export const HomePage = () => {
   const summaryQuery = useCabinetSummaryAllQuery()
   const isLoading = summaryQuery.isLoading
   const contentWidth = 'min(1200px, calc(100% - 64px))'
+  const heroBg = useColorModeValue(
+    "url('/assets/images/bg_full.png')",
+    "url('/assets/images/dark_bg.png')",
+  )
+  const heroCardBg = useColorModeValue(
+    "url('/assets/images/hero_bg2.png')",
+    "url('/assets/images/dark_hero.png')",
+  )
+  const badgeBg = useColorModeValue('whiteAlpha.800', 'blackAlpha.600')
+  const badgeColor = useColorModeValue('pink.600', 'blue.200')
+  const titleColor = useColorModeValue('whiteAlpha.900', 'whiteAlpha.900')
+  const subtitleColor = useColorModeValue('gray.600', 'gray.200')
+  const buttonBg = useColorModeValue('brand.500', 'blue.600')
+  const buttonHover = useColorModeValue('brand.400', 'blue.500')
+  const buttonActive = useColorModeValue('brand.600', 'blue.700')
+  const titleStroke = useColorModeValue(
+    '0.01px rgba(255, 120, 160, 0.55)',
+    '0.01px rgba(80, 120, 200, 0.6)',
+  )
+  const titleShadow = useColorModeValue(
+    '0 8px 18px rgba(255, 105, 135, 0.35)',
+    '0 8px 18px rgba(30, 60, 110, 0.45)',
+  )
 
   return (
     <Box minH="100vh" pb={{ base: 10, md: 12 }}>
@@ -18,7 +41,7 @@ export const HomePage = () => {
           ml="-50vw"
           mr="-50vw"
           mt={{ base: -5, md: -7 }}
-          bgImage="url('/assets/images/bg_full.png')"
+          bgImage={heroBg}
           bgRepeat="no-repeat"
           bgSize="cover"
           bgPos="center"
@@ -30,7 +53,7 @@ export const HomePage = () => {
             mx="auto"
             h={{ base: 'auto', md: '380px' }}
             borderRadius="28px"
-            bgImage="url('/assets/images/hero_bg2.png')"
+            bgImage={heroCardBg}
             bgSize="cover"
             bgPos="center"
             bgRepeat="no-repeat"
@@ -45,8 +68,8 @@ export const HomePage = () => {
                 py={1}
                 fontSize="sm"
                 borderRadius="12px"
-                bg="whiteAlpha.800"
-                color="pink.600"
+                bg={badgeBg}
+                color={badgeColor}
               >
                 SUBAK STORIES
               </Badge>
@@ -58,9 +81,9 @@ export const HomePage = () => {
                 maxW="720px"
                 wordBreak="keep-all"
                 whiteSpace="normal"
-                color="whiteAlpha.900"
-                textShadow="0 8px 18px rgba(255, 105, 135, 0.35)"
-                sx={{ WebkitTextStroke: '0.01px rgba(255, 120, 160, 0.55)' }}
+                color={titleColor}
+                textShadow={titleShadow}
+                sx={{ WebkitTextStroke: titleStroke }}
               >
                 무거운 짐, 캠퍼스에 두고 가세요.
               </Text>
@@ -69,7 +92,7 @@ export const HomePage = () => {
                 fontSize={{ base: '16px', md: '18px' }}
                 lineHeight={1.6}
                 maxW="640px"
-                color="gray.600"
+                color={subtitleColor}
               >
                 42 경산 학습자를 위한 공유 사물함 대여 서비스
               </Text>
@@ -79,9 +102,10 @@ export const HomePage = () => {
                 px="18px"
                 borderRadius="16px"
                 alignSelf="flex-start"
-                bg="brand.500"
+                bg={buttonBg}
                 color="white"
-                _hover={{ bg: 'brand.400' }}
+                _hover={{ bg: buttonHover }}
+                _active={{ bg: buttonActive }}
                 display="inline-flex"
                 alignItems="center"
                 gap="10px"

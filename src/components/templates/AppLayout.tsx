@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
   Box,
   Button,
@@ -11,12 +12,11 @@ import {
   useColorModeValue,
   useDisclosure,
 } from '@chakra-ui/react'
-import { useEffect, useState } from 'react'
-import { Link as RouterLink, NavLink, Outlet } from 'react-router-dom'
-import { HiOutlineMenu, HiOutlineX } from 'react-icons/hi'
 import { FiMoon, FiSun } from 'react-icons/fi'
-import { env } from '@/libs/env'
+import { HiOutlineMenu, HiOutlineX } from 'react-icons/hi'
+import { NavLink, Outlet, Link as RouterLink } from 'react-router-dom'
 import { useAuthSession } from '@/features/auth/hooks/useAuthSession'
+import { env } from '@/libs/env'
 
 const routes = [
   { to: '/admin', label: '관리자', requiresAdmin: true },
@@ -93,7 +93,15 @@ export const AppLayout = () => {
         top={0}
         zIndex={10}
       >
-        <Flex align="center" justify="flex-start" maxW="1200px" mx="auto" px={{ base: 4, md: 8 }} py={4} gap={4}>
+        <Flex
+          align="center"
+          justify="flex-start"
+          maxW="1200px"
+          mx="auto"
+          px={{ base: 4, md: 8 }}
+          py={4}
+          gap={4}
+        >
           <Link
             as={RouterLink}
             to="/"
@@ -120,7 +128,15 @@ export const AppLayout = () => {
           </Link>
           <Flex align="center" gap={4} display={{ base: 'none', md: 'flex' }} ml="auto">
             {renderLinks('row')}
-            <Button size="sm" colorScheme="brand" variant={isLoggedIn ? 'outline' : 'solid'} onClick={isLoggedIn ? logout : handleLogin}>
+            <Button
+              size="sm"
+              bg={colorMode === 'light' ? 'brand.500' : 'blue.600'}
+              color="white"
+              _hover={{ bg: colorMode === 'light' ? 'brand.400' : 'blue.500' }}
+              _active={{ bg: colorMode === 'light' ? 'brand.600' : 'blue.700' }}
+              variant={isLoggedIn ? 'outline' : 'solid'}
+              onClick={isLoggedIn ? logout : handleLogin}
+            >
               {isLoggedIn ? '로그아웃' : '로그인'}
             </Button>
             <IconButton
@@ -155,7 +171,10 @@ export const AppLayout = () => {
             <Button
               mt={4}
               w="full"
-              colorScheme="brand"
+              bg={colorMode === 'light' ? 'brand.500' : 'blue.600'}
+              color="white"
+              _hover={{ bg: colorMode === 'light' ? 'brand.400' : 'blue.500' }}
+              _active={{ bg: colorMode === 'light' ? 'brand.600' : 'blue.700' }}
               variant={isLoggedIn ? 'outline' : 'solid'}
               onClick={() => {
                 onClose()
