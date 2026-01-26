@@ -227,7 +227,7 @@ export const MyLockersPage = () => {
         handleStopCamera()
         setReturnStep('password')
       },
-      onError: (error) => {
+      onError: () => {
         const message = '사물함 내부가 비어있는지 다시 확인해 주세요.'
         setImageCheckPassed(false)
         setImageCheckFailures((prev) => prev + 1)
