@@ -173,15 +173,18 @@ export const FloorSectionMap = ({
                 _hover={{ opacity: 0.9 }}
                 onClick={() => onSelect(section)}
               >
-                <Stack spacing={0} align="center">
+                <Stack spacing={0.5} align="center">
                   <Text fontSize="xs" fontWeight="bold" lineHeight="shorter">
                     {section.title}
                   </Text>
-                  <Text fontSize="10px" lineHeight="shorter">
-                    총 {stats?.total ?? '-'}개
-                  </Text>
-                  <Text fontSize="10px" lineHeight="shorter">
-                    가능 {stats?.available ?? '-'}개
+                  <Text fontSize="xs" lineHeight="shorter">
+                    <Text as="span" fontWeight="bold" color="leaf.500">
+                      {stats?.available ?? '-'}
+                    </Text>
+                    /
+                    <Text as="span" fontWeight="bold">
+                      {stats?.total ?? '-'}
+                    </Text>
                   </Text>
                 </Stack>
               </Button>

@@ -658,7 +658,7 @@ export const LockersPage = () => {
                 {isLoggedIn ? '이 사물함 대여하기' : '로그인 후 대여 가능'}
               </Button>
             )}
-            {isSwapMode && (
+            {hasLocker && (
               <Button
                 variant="outline"
                 colorScheme="brand"
@@ -669,7 +669,7 @@ export const LockersPage = () => {
                   handleSwapStart()
                 }}
               >
-                {hasSwapTicket ? '이사하기' : '이사권이 필요합니다'}
+                이사하기
               </Button>
             )}
           </Stack>
@@ -926,7 +926,7 @@ export const LockersPage = () => {
                           {isLoggedIn ? '이 사물함 대여하기' : '로그인 후 대여 가능'}
                         </Button>
                       )}
-                      {isSwapMode && (
+                      {hasLocker && (
                         <Button
                           mt={2}
                           variant="outline"
@@ -934,7 +934,7 @@ export const LockersPage = () => {
                           isDisabled={!canSwapSelected}
                           onClick={handleSwapStart}
                         >
-                          {hasSwapTicket ? '이사하기' : '이사권이 필요합니다'}
+                          이사하기
                         </Button>
                       )}
                     </HStack>
