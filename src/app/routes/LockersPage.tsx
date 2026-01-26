@@ -1,6 +1,7 @@
 import {
   Alert,
   AlertIcon,
+  Badge,
   Box,
   Button,
   Divider,
@@ -80,7 +81,6 @@ export const LockersPage = () => {
   const swapTicketCount = me?.myItems?.filter((item) => item.itemType === 'SWAP').length ?? 0
   const hasSwapTicket = swapTicketCount > 0
   const location = useLocation()
-  const isSwapMode = Boolean((location.state as { swap?: boolean } | null)?.swap)
   const [activeFloor, setActiveFloor] = useState<number | null>(lockerFloors[0] ?? null)
   const [activeSectionId, setActiveSectionId] = useState<number | null>(null)
   const [viewMode, setViewMode] = useState<'map' | 'detail'>('map')
