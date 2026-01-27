@@ -6,10 +6,16 @@ import type {
   AdminCabinetHistoryPage,
   AdminCabinetPendingItem,
   AdminDashboardStats,
+  AdminFloorStatsResponse,
+  AdminPenaltyUser,
+  AdminBrokenCabinet,
   AdminOverdueUser,
+  AdminCoinStatsResponse,
+  AdminItemUsageStatsResponse,
   AdminStoreStats,
   AdminUserDetail,
   AdminWeeklyStats,
+  CabinetStatusBundleRequest,
   CabinetStatusRequest,
   CoinProvideRequest,
   CoinRevokeRequest,
@@ -31,6 +37,11 @@ export const fetchAdminDashboard = async (): Promise<AdminDashboardStats> => {
 export const fetchAdminUserDetail = async (name: string): Promise<AdminUserDetail> => {
   const { data } = await apiClient.get(`${BASE_PATH}/users/${name}`)
   return unwrapApiResponse<AdminUserDetail>(data)
+}
+
+export const fetchAdminFloorStats = async (): Promise<AdminFloorStatsResponse> => {
+  const { data } = await apiClient.get(`${BASE_PATH}/stats/floors`)
+  return unwrapApiResponse<AdminFloorStatsResponse>(data)
 }
 
 export const fetchAdminWeeklyStats = async (): Promise<AdminWeeklyStats> => {
@@ -86,6 +97,11 @@ export const revokeItem = async (name: string, payload: ItemRevokeRequest): Prom
   return unwrapApiResponse<string>(data)
 }
 
+export const fetchPenaltyUsers = async (): Promise<AdminPenaltyUser[]> => {
+  const { data } = await apiClient.get(`${BASE_PATH}/users/penalty`)
+  return unwrapApiResponse<AdminPenaltyUser[]>(data)
+}
+
 export const updateLogtime = async (
   name: string,
   payload: LogtimeUpdateRequest,
@@ -112,6 +128,13 @@ export const updateCabinetStatus = async (
     `${BASE_PATH}/cabinets/${visibleNum}`,
     payload,
   )
+  return unwrapApiResponse<string>(data)
+}
+
+export const updateCabinetStatusBundle = async (
+  payload: CabinetStatusBundleRequest,
+): Promise<string> => {
+  const { data } = await apiClient.patch(`${BASE_PATH}/cabinets/bundle/status`, payload)
   return unwrapApiResponse<string>(data)
 }
 
@@ -152,6 +175,21 @@ export const fetchCabinetHistory = async (
 export const fetchOverdueUsers = async (): Promise<AdminOverdueUser[]> => {
   const { data } = await apiClient.get(`${BASE_PATH}/cabinets/overdue`)
   return unwrapApiResponse<AdminOverdueUser[]>(data)
+}
+
+export const fetchBrokenCabinets = async (): Promise<AdminBrokenCabinet[]> => {
+  const { data } = await apiClient.get(`${BASE_PATH}/cabinets/broken`)
+  return unwrapApiResponse<AdminBrokenCabinet[]>(data)
+}
+
+export const fetchCoinStats = async (): Promise<AdminCoinStatsResponse> => {
+  const { data } = await apiClient.get(`${BASE_PATH}/stats/coins`)
+  return unwrapApiResponse<AdminCoinStatsResponse>(data)
+}
+
+export const fetchItemUsageStats = async (): Promise<AdminItemUsageStatsResponse> => {
+  const { data } = await apiClient.get(`${BASE_PATH}/stats/items`)
+  return unwrapApiResponse<AdminItemUsageStatsResponse>(data)
 }
 
 export const updateItemPrice = async (

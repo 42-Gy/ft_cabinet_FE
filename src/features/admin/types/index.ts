@@ -13,6 +13,7 @@ export interface AdminUserDetail {
   coin: number
   penaltyDays: number
   monthlyLogtime: number
+  itemCounts?: Partial<Record<AdminItemType, number>>
   blackholedAt?: string | null
   role?: string | null
   currentCabinetNum?: number | null
@@ -40,14 +41,22 @@ export interface ItemGrantRequest {
 
 export interface ItemRevokeRequest {
   itemName: string
+  amount?: number | null
 }
 
 export interface LogtimeUpdateRequest {
   monthlyLogtime: number
 }
 
-export type CabinetStatusValue = 'AVAILABLE' | 'BROKEN' | 'FULL' | 'OVERDUE'
+export type CabinetStatusValue =
+  | 'AVAILABLE'
+  | 'BROKEN'
+  | 'FULL'
+  | 'OVERDUE'
+  | 'DISABLED'
+  | 'PENDING'
 export type CabinetLentType = 'PRIVATE' | 'SHARE' | 'CLUB'
+export type AdminItemType = 'LENT' | 'EXTENSION' | 'SWAP' | 'PENALTY_EXEMPTION'
 
 export interface CabinetStatusRequest {
   status: CabinetStatusValue
@@ -55,9 +64,16 @@ export interface CabinetStatusRequest {
   statusNote?: string
 }
 
-export interface AdminWeeklyStats {
+export interface AdminWeeklyStatsPoint {
+  weekLabel: string
+  startDate: string
+  endDate: string
   lentsStarted: number
   lentsEnded: number
+}
+
+export interface AdminWeeklyStats {
+  weeklyData: AdminWeeklyStatsPoint[]
 }
 
 export interface AdminStoreStats {
@@ -73,6 +89,20 @@ export interface AdminStoreStats {
 export interface AdminAttendanceStat {
   date: string
   count: number
+}
+
+export interface AdminFloorStatsItem {
+  floor: number
+  total: number
+  used: number
+  available: number
+  overdue: number
+  broken: number
+  pending: number
+}
+
+export interface AdminFloorStatsResponse {
+  floors: AdminFloorStatsItem[]
 }
 
 export interface AdminCabinetDetail {
@@ -116,10 +146,56 @@ export interface AdminOverdueUser {
   overdueDays: number
 }
 
+export interface AdminPenaltyUser {
+  userId: number
+  name: string
+  penaltyDays: number
+  penaltyEndDate: string
+}
+
+export interface AdminBrokenCabinet {
+  cabinetId: number
+  visibleNum: number
+  floor: number
+  section: string
+  statusNote?: string | null
+}
+
+export interface CabinetStatusBundleRequest {
+  cabinetIds: number[]
+  status: CabinetStatusValue
+  statusNote?: string
+}
+
 export interface ItemPriceUpdateRequest {
   price: number
 }
 
 export interface EmergencyNoticeRequest {
   message: string
+}
+
+export interface AdminCoinStatsPoint {
+  weekLabel: string
+  startDate: string
+  endDate: string
+  issuedAmount: number
+  usedAmount: number
+}
+
+export interface AdminCoinStatsResponse {
+  weeklyData: AdminCoinStatsPoint[]
+}
+
+export interface AdminItemUsageStat {
+  itemName: string
+  itemType: AdminItemType
+  purchaseCount: number
+  usedCount: number
+}
+
+export interface AdminItemUsageStatsResponse {
+  itemStats: AdminItemUsageStat[]
+  attendanceRewardsCount: number
+  watermelonRewardsCount: number
 }

@@ -1,44 +1,56 @@
 import { useToast } from '@chakra-ui/react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
-  fetchAdminDashboard,
-  fetchAdminWeeklyStats,
-  fetchAdminStoreStats,
+  approvePendingCabinet,
+  assignPenalty,
+  demoteAdminRole,
   fetchAdminAttendanceStats,
+  fetchAdminDashboard,
+  fetchAdminFloorStats,
+  fetchAdminStoreStats,
   fetchAdminUserDetail,
+  fetchAdminWeeklyStats,
+  fetchBrokenCabinets,
   fetchCabinetDetail,
   fetchCabinetHistory,
   fetchCabinetPendingList,
+  fetchCoinStats,
+  fetchItemUsageStats,
   fetchOverdueUsers,
-  approvePendingCabinet,
+  fetchPenaltyUsers,
   forceReturnCabinet,
-  assignPenalty,
-  removePenalty,
   grantItem,
-  revokeItem,
-  revokeCoin,
-  provideCoin,
   promoteAdminRole,
-  demoteAdminRole,
+  provideCoin,
+  removePenalty,
+  revokeCoin,
+  revokeItem,
   sendEmergencyNotice,
   updateCabinetStatus,
+  updateCabinetStatusBundle,
   updateItemPrice,
   updateLogtime,
 } from '@/features/admin/api/admin'
 import type {
   AdminAttendanceStat,
+  AdminBrokenCabinet,
   AdminCabinetHistoryPage,
   AdminCabinetPendingItem,
+  AdminCoinStatsResponse,
+  AdminFloorStatsResponse,
+  AdminItemUsageStatsResponse,
   AdminOverdueUser,
+  AdminPenaltyUser,
   AdminStoreStats,
   AdminWeeklyStats,
+  CabinetStatusBundleRequest,
   CabinetStatusRequest,
   CoinProvideRequest,
   CoinRevokeRequest,
   EmergencyNoticeRequest,
   ItemGrantRequest,
-  ItemRevokeRequest,
   ItemPriceUpdateRequest,
+  ItemRevokeRequest,
   LogtimeUpdateRequest,
   PenaltyAssignRequest,
 } from '@/features/admin/types'
@@ -46,6 +58,9 @@ import type {
 export const adminQueryKeys = {
   dashboard: ['admin', 'dashboard'] as const,
   weekly: ['admin', 'weekly'] as const,
+  floors: ['admin', 'floors'] as const,
+  coins: ['admin', 'coins'] as const,
+  items: ['admin', 'items'] as const,
   store: ['admin', 'store'] as const,
   attendance: (startDate?: string, endDate?: string) =>
     ['admin', 'attendance', startDate ?? '', endDate ?? ''] as const,
@@ -53,6 +68,8 @@ export const adminQueryKeys = {
   cabinet: (visibleNum?: number) => ['admin', 'cabinet', visibleNum ?? 0] as const,
   pending: ['admin', 'cabinets', 'pending'] as const,
   overdue: ['admin', 'cabinets', 'overdue'] as const,
+  penaltyUsers: ['admin', 'users', 'penalty'] as const,
+  brokenCabinets: ['admin', 'cabinets', 'broken'] as const,
   history: (visibleNum?: number, page = 0) =>
     ['admin', 'cabinets', 'history', visibleNum ?? 0, page] as const,
 }
@@ -69,10 +86,28 @@ export const useAdminWeeklyStatsQuery = () =>
     queryFn: fetchAdminWeeklyStats,
   })
 
+export const useAdminFloorStatsQuery = () =>
+  useQuery<AdminFloorStatsResponse>({
+    queryKey: adminQueryKeys.floors,
+    queryFn: fetchAdminFloorStats,
+  })
+
 export const useAdminStoreStatsQuery = () =>
   useQuery<AdminStoreStats>({
     queryKey: adminQueryKeys.store,
     queryFn: fetchAdminStoreStats,
+  })
+
+export const useAdminCoinStatsQuery = () =>
+  useQuery<AdminCoinStatsResponse>({
+    queryKey: adminQueryKeys.coins,
+    queryFn: fetchCoinStats,
+  })
+
+export const useAdminItemUsageStatsQuery = () =>
+  useQuery<AdminItemUsageStatsResponse>({
+    queryKey: adminQueryKeys.items,
+    queryFn: fetchItemUsageStats,
   })
 
 export const useAdminAttendanceStatsQuery = (startDate?: string, endDate?: string) =>
@@ -113,6 +148,18 @@ export const useAdminOverdueCabinetsQuery = () =>
     queryFn: fetchOverdueUsers,
   })
 
+export const useAdminPenaltyUsersQuery = () =>
+  useQuery<AdminPenaltyUser[]>({
+    queryKey: adminQueryKeys.penaltyUsers,
+    queryFn: fetchPenaltyUsers,
+  })
+
+export const useAdminBrokenCabinetsQuery = () =>
+  useQuery<AdminBrokenCabinet[]>({
+    queryKey: adminQueryKeys.brokenCabinets,
+    queryFn: fetchBrokenCabinets,
+  })
+
 export const useAdminCabinetHistoryQuery = (visibleNum?: number, page = 0, size = 10) =>
   useQuery<AdminCabinetHistoryPage>({
     queryKey: adminQueryKeys.history(visibleNum, page),
@@ -137,7 +184,8 @@ export const useCoinProvideMutation = () => {
       toast({ description: message ?? '코인 지급 완료', status: 'success' })
     },
     onError: (error: unknown) => {
-      const description = error instanceof Error ? error.message : '코인 지급 중 오류가 발생했습니다.'
+      const description =
+        error instanceof Error ? error.message : '코인 지급 중 오류가 발생했습니다.'
       toast({ description, status: 'error' })
     },
   })
@@ -152,7 +200,8 @@ export const useCoinRevokeMutation = () => {
       toast({ description: message ?? '코인 회수 완료', status: 'success' })
     },
     onError: (error: unknown) => {
-      const description = error instanceof Error ? error.message : '코인 회수 중 오류가 발생했습니다.'
+      const description =
+        error instanceof Error ? error.message : '코인 회수 중 오류가 발생했습니다.'
       toast({ description, status: 'error' })
     },
   })
@@ -270,19 +319,29 @@ export const useAdminRoleDemoteMutation = () => {
 export const useCabinetStatusMutation = () => {
   const toast = useAdminMutationToast()
   return useMutation({
-    mutationFn: ({
-      visibleNum,
-      payload,
-    }: {
-      visibleNum: number
-      payload: CabinetStatusRequest
-    }) => updateCabinetStatus(visibleNum, payload),
+    mutationFn: ({ visibleNum, payload }: { visibleNum: number; payload: CabinetStatusRequest }) =>
+      updateCabinetStatus(visibleNum, payload),
     onSuccess: (message) => {
       toast({ description: message ?? '사물함 상태 변경 완료', status: 'success' })
     },
     onError: (error: unknown) => {
       const description =
         error instanceof Error ? error.message : '사물함 상태 변경 중 오류가 발생했습니다.'
+      toast({ description, status: 'error' })
+    },
+  })
+}
+
+export const useCabinetStatusBundleMutation = () => {
+  const toast = useAdminMutationToast()
+  return useMutation({
+    mutationFn: (payload: CabinetStatusBundleRequest) => updateCabinetStatusBundle(payload),
+    onSuccess: (message) => {
+      toast({ description: message ?? '사물함 상태 일괄 변경 완료', status: 'success' })
+    },
+    onError: (error: unknown) => {
+      const description =
+        error instanceof Error ? error.message : '사물함 상태 일괄 변경 중 오류가 발생했습니다.'
       toast({ description, status: 'error' })
     },
   })
