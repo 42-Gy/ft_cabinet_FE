@@ -490,6 +490,7 @@ export const AdminDashboard = () => {
   )
 
   const [adminFloor, setAdminFloor] = useState<2 | 3>(2)
+  const [floorStatsScope, setFloorStatsScope] = useState<'all' | 2 | 3>('all')
   const [selectedSectionIds, setSelectedSectionIds] = useState<number[]>([])
   const [selectedStatuses, setSelectedStatuses] = useState<CabinetStatusValue[]>([])
   const [selectedCabinetIds, setSelectedCabinetIds] = useState<number[]>([])
@@ -572,27 +573,44 @@ export const AdminDashboard = () => {
     return Array.isArray(floors) ? floors : []
   }, [floorStatsQuery.data?.floors])
 
-  const floorAggregateSegments = useMemo<ChartSegment[]>(() => {
-    if (!floorStats.length) return []
-    const aggregate = floorStats.reduce(
+  const scopedFloorStats = useMemo(() => {
+    if (floorStatsScope === 'all') return floorStats
+    return floorStats.filter((item) => item.floor === floorStatsScope)
+  }, [floorStats, floorStatsScope])
+
+  const floorAggregate = useMemo(() => {
+    if (!scopedFloorStats.length) {
+      return { total: 0, available: 0, used: 0, overdue: 0, broken: 0, pending: 0, disabled: 0 }
+    }
+    return scopedFloorStats.reduce(
       (acc, item) => {
+        acc.total += item.total
         acc.available += item.available
         acc.used += item.used
         acc.overdue += item.overdue
         acc.broken += item.broken
         acc.pending += item.pending
+        acc.disabled += item.disabled ?? 0
         return acc
       },
-      { available: 0, used: 0, overdue: 0, broken: 0, pending: 0 },
+      { total: 0, available: 0, used: 0, overdue: 0, broken: 0, pending: 0, disabled: 0 },
     )
-    return [
-      { label: '사용 가능', value: aggregate.available, color: statusColors.AVAILABLE },
-      { label: '사용 중', value: aggregate.used, color: statusColors.FULL },
-      { label: '반납 지연', value: aggregate.overdue, color: statusColors.OVERDUE },
-      { label: '고장/중지', value: aggregate.broken, color: statusColors.BROKEN },
-      { label: '승인 대기', value: aggregate.pending, color: statusColors.PENDING },
+  }, [scopedFloorStats])
+
+  const floorAggregateSegments = useMemo<ChartSegment[]>(() => {
+    if (!scopedFloorStats.length) return []
+    const segments: ChartSegment[] = [
+      { label: '사용 가능', value: floorAggregate.available, color: statusColors.AVAILABLE },
+      { label: '사용 중', value: floorAggregate.used, color: statusColors.FULL },
+      { label: '반납 지연', value: floorAggregate.overdue, color: statusColors.OVERDUE },
+      { label: '고장/중지', value: floorAggregate.broken, color: statusColors.BROKEN },
+      { label: '승인 대기', value: floorAggregate.pending, color: statusColors.PENDING },
     ]
-  }, [floorStats, statusColors])
+    if (floorAggregate.disabled > 0) {
+      segments.push({ label: '비활성', value: floorAggregate.disabled, color: statusColors.DISABLED })
+    }
+    return segments
+  }, [floorAggregate, scopedFloorStats.length, statusColors])
 
   const weeklyData = useMemo<AdminWeeklyStatsPoint[]>(() => {
     const raw = weeklyQuery.data?.weeklyData
@@ -750,14 +768,44 @@ export const AdminDashboard = () => {
                 ) : floorStatsQuery.isError ? (
                   <ErrorState onRetry={floorStatsQuery.refetch} />
                 ) : floorAggregateSegments.length ? (
-                  <DonutChart
-                    title="층별 사물함 이용 현황"
-                    segments={floorAggregateSegments}
-                    centerLabel={formatNumber(
-                      floorStats.reduce((sum, item) => sum + item.total, 0),
-                    )}
-                    centerSubLabel="전체 사물함"
-                  />
+                  <Stack spacing={4}>
+                    <HStack spacing={2} justify="flex-end" flexWrap="wrap">
+                      <Button
+                        size="sm"
+                        variant={floorStatsScope === 'all' ? 'solid' : 'outline'}
+                        colorScheme="brand"
+                        onClick={() => setFloorStatsScope('all')}
+                      >
+                        전체
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={floorStatsScope === 2 ? 'solid' : 'outline'}
+                        colorScheme="brand"
+                        onClick={() => setFloorStatsScope(2)}
+                      >
+                        2층
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={floorStatsScope === 3 ? 'solid' : 'outline'}
+                        colorScheme="brand"
+                        onClick={() => setFloorStatsScope(3)}
+                      >
+                        3층
+                      </Button>
+                    </HStack>
+                    <DonutChart
+                      title="층별 사물함 이용 현황"
+                      segments={floorAggregateSegments}
+                      centerLabel={formatNumber(floorAggregate.total)}
+                      centerSubLabel={
+                        floorStatsScope === 'all'
+                          ? '전체 사물함'
+                          : `${floorStatsScope}층 사물함`
+                      }
+                    />
+                  </Stack>
                 ) : (
                   <EmptyState title="층별 현황 데이터가 없습니다" />
                 )}

@@ -99,6 +99,7 @@ export interface AdminFloorStatsItem {
   overdue: number
   broken: number
   pending: number
+  disabled?: number
 }
 
 export interface AdminFloorStatsResponse {
