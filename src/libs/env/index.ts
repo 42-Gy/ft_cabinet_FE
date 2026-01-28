@@ -4,8 +4,8 @@ const booleanFromEnv = (value: string | undefined, fallback = false) => {
 }
 
 const fallback = {
-  apiBaseUrl: 'https://ft-cabinet-server-dpa9dkauhkdkajcr.koreacentral-01.azurewebsites.net',
-  authBaseUrl: 'https://ft-cabinet-server-dpa9dkauhkdkajcr.koreacentral-01.azurewebsites.net',
+  apiBaseUrl: 'https://subak.site/api',
+  authBaseUrl: 'https://subak.site',
   policyEmail: 'seonghan',
   policyContact: 'Slack DM',
   policyUpdatedAt: '2025-01-26',
