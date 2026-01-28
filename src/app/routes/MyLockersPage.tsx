@@ -61,6 +61,7 @@ export const MyLockersPage = () => {
   const [cameraActive, setCameraActive] = useState(false)
   const [cameraReady, setCameraReady] = useState(false)
   const [cameraStarting, setCameraStarting] = useState(false)
+  const [historyTab, setHistoryTab] = useState<'coin' | 'item'>('coin')
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const cameraReadyRef = useRef(false)
@@ -71,8 +72,12 @@ export const MyLockersPage = () => {
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200')
   const textMuted = useColorModeValue('gray.600', 'gray.400')
   const itemBg = useColorModeValue('gray.50', 'gray.700')
+  const earnColor = useColorModeValue('leaf.600', 'leaf.300')
+  const spendColor = useColorModeValue('red.500', 'red.300')
 
   const myItems = me?.myItems ?? []
+  const coinHistories = me?.coinHistories ?? []
+  const itemHistories = me?.itemHistories ?? []
   const itemCounts = useMemo(() => {
     return myItems.reduce<Record<UserItemType, number>>((acc, item) => {
       acc[item.itemType] = (acc[item.itemType] ?? 0) + 1
@@ -390,7 +395,7 @@ export const MyLockersPage = () => {
               {me.name} · {me.email}
             </Text>
             <Badge colorScheme="purple" w="fit-content">
-              코인 {(me.coin ?? 0).toLocaleString()}개
+              수박씨 {(me.coin ?? 0).toLocaleString()}개
             </Badge>
             <Text fontSize="sm" color={textMuted}>
               이번 달 로그타임: {(me.monthlyLogtime ?? 0).toLocaleString()}분
@@ -524,6 +529,110 @@ export const MyLockersPage = () => {
           </Button>
         </Box>
       </Stack>
+
+      <Box borderRadius="xl" bg={cardBg} p={6} shadow="md" borderWidth={1} borderColor={borderColor}>
+        <Stack spacing={4}>
+          <HStack justify="space-between" align="center" flexWrap="wrap" gap={3}>
+            <Text fontSize="lg" fontWeight="bold">
+              재화 내역
+            </Text>
+            <HStack spacing={2}>
+              <Button
+                size="sm"
+                variant={historyTab === 'coin' ? 'solid' : 'outline'}
+                colorScheme="brand"
+                onClick={() => setHistoryTab('coin')}
+              >
+                수박씨 내역
+              </Button>
+              <Button
+                size="sm"
+                variant={historyTab === 'item' ? 'solid' : 'outline'}
+                colorScheme="brand"
+                onClick={() => setHistoryTab('item')}
+              >
+                아이템 사용 내역
+              </Button>
+            </HStack>
+          </HStack>
+
+          {historyTab === 'coin' ? (
+            coinHistories.length === 0 ? (
+              <EmptyState
+                title="수박씨 내역이 없습니다"
+                description="출석 보상이나 아이템 사용 내역이 아직 없습니다."
+              />
+            ) : (
+              <Stack spacing={3}>
+                {coinHistories.map((history, index) => (
+                  <Box
+                    key={`${history.date}-${history.type}-${index}`}
+                    borderRadius="md"
+                    bg={itemBg}
+                    px={4}
+                    py={3}
+                  >
+                    <HStack justify="space-between" align="center">
+                      <Stack spacing={1}>
+                        <Text fontWeight="semibold">
+                          {history.reason ?? '수박씨 변동'}
+                        </Text>
+                        <Text fontSize="sm" color={textMuted}>
+                          {formatDate(history.date)}
+                        </Text>
+                      </Stack>
+                      <Text
+                        fontWeight="bold"
+                        color={history.type === 'EARN' ? earnColor : spendColor}
+                      >
+                        {history.amount > 0 ? '+' : ''}
+                        {history.amount.toLocaleString()} 수박씨
+                      </Text>
+                    </HStack>
+                  </Box>
+                ))}
+              </Stack>
+            )
+          ) : itemHistories.length === 0 ? (
+            <EmptyState
+              title="아이템 내역이 없습니다"
+              description="아이템 구매/사용 기록이 아직 없습니다."
+            />
+          ) : (
+            <Stack spacing={3}>
+              {itemHistories.map((history, index) => {
+                const statusLabel = history.status === 'USED' ? '사용됨' : '미사용'
+                return (
+                  <Box
+                    key={`${history.date}-${history.itemType}-${index}`}
+                    borderRadius="md"
+                    bg={itemBg}
+                    px={4}
+                    py={3}
+                  >
+                    <HStack justify="space-between" align="center">
+                      <Stack spacing={1}>
+                        <Text fontWeight="semibold">{history.itemName}</Text>
+                        <Text fontSize="sm" color={textMuted}>
+                          {formatDate(history.date)}
+                        </Text>
+                      </Stack>
+                      <Stack spacing={1} textAlign="right">
+                        <Text fontWeight="bold">{statusLabel}</Text>
+                        {history.usedAt && (
+                          <Text fontSize="sm" color={textMuted}>
+                            사용: {formatDate(history.usedAt)}
+                          </Text>
+                        )}
+                      </Stack>
+                    </HStack>
+                  </Box>
+                )
+              })}
+            </Stack>
+          )}
+        </Stack>
+      </Box>
 
       <Modal isOpen={returnModal.isOpen} onClose={handleReturnClose} size="lg">
         <ModalOverlay />

@@ -7,6 +7,25 @@ export interface UserItem {
   purchaseAt: string
 }
 
+export type CoinHistoryType = 'SPEND' | 'EARN'
+
+export interface CoinHistory {
+  date: string
+  amount: number
+  type: CoinHistoryType
+  reason?: string | null
+}
+
+export type ItemHistoryStatus = 'UNUSED' | 'USED'
+
+export interface ItemHistory {
+  date: string
+  itemName: string
+  itemType: UserItemType
+  status: ItemHistoryStatus
+  usedAt?: string | null
+}
+
 export interface UserProfile {
   userId: number
   name: string
@@ -24,4 +43,6 @@ export interface UserProfile {
   lentExpiredAt?: string | null
   autoExtensionEnabled?: boolean | null
   myItems: UserItem[]
+  coinHistories?: CoinHistory[]
+  itemHistories?: ItemHistory[]
 }

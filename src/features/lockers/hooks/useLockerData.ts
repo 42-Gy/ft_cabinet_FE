@@ -86,6 +86,8 @@ export const useCabinetSummaryQuery = ({
       return getCabinetSummary(floor)
     },
     enabled: Boolean(typeof floor === 'number' && enabled),
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 }
 
@@ -93,6 +95,8 @@ export const useCabinetSummaryAllQuery = () =>
   useQuery({
     queryKey: cabinetSummaryAllKey,
     queryFn: getCabinetSummaryAll,
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 
 export const useCabinetDetailQuery = (cabinetId?: number | null) =>

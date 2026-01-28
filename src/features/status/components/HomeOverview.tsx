@@ -24,10 +24,7 @@ import { EmptyState } from '@/components/molecules/EmptyState'
 import { ErrorState } from '@/components/molecules/ErrorState'
 import { LoadingState } from '@/components/molecules/LoadingState'
 import { cabinetSections, extractSectionId } from '@/features/lockers/data/cabinetSections'
-import {
-  useCabinetSummaryAllQuery,
-  useCabinetSummaryQuery,
-} from '@/features/lockers/hooks/useLockerData'
+import { useCabinetSummaryQuery } from '@/features/lockers/hooks/useLockerData'
 import { UsageSummary } from '@/features/status/components/UsageSummary'
 import type { CabinetSummary, CabinetSummaryAll } from '@/types/locker'
 
@@ -55,14 +52,21 @@ const guideCards = [
 interface HomeOverviewProps {
   summaryAll?: CabinetSummaryAll | null
   summaryError?: boolean
+  summaryLoading?: boolean
   onRetry?: () => void
+  isLoggedIn?: boolean
 }
 
-export const HomeOverview = ({ summaryAll, summaryError, onRetry }: HomeOverviewProps) => {
+export const HomeOverview = ({
+  summaryAll,
+  summaryError,
+  summaryLoading,
+  onRetry,
+  isLoggedIn = false,
+}: HomeOverviewProps) => {
   const guideModal = useDisclosure()
-  const summaryQuery = useCabinetSummaryAllQuery()
-  const summary2F = useCabinetSummaryQuery({ floor: 2, enabled: true })
-  const summary3F = useCabinetSummaryQuery({ floor: 3, enabled: true })
+  const summary2F = useCabinetSummaryQuery({ floor: 2, enabled: isLoggedIn })
+  const summary3F = useCabinetSummaryQuery({ floor: 3, enabled: isLoggedIn })
   const highlightBg = useColorModeValue('white', 'gray.800')
   const highlightBorder = useColorModeValue('gray.100', 'whiteAlpha.200')
   const sectionText = useColorModeValue('gray.600', 'gray.300')
@@ -128,12 +132,12 @@ export const HomeOverview = ({ summaryAll, summaryError, onRetry }: HomeOverview
     return floors
   }, [summary2F.data, summary3F.data])
 
-  const resolvedSummary = summaryAll ?? summaryQuery.data
-  const isLoading = summaryAll === undefined ? summaryQuery.isLoading : false
-  const isError = summaryError ?? summaryQuery.isError
+  const resolvedSummary = summaryAll
+  const isLoading = Boolean(summaryLoading)
+  const isError = Boolean(summaryError)
 
-  if (isLoading) return <LoadingState label="락커 현황을 불러오는 중입니다." />
-  if (isError) return <ErrorState onRetry={onRetry ?? summaryQuery.refetch} />
+  if (isLoading) return <LoadingState label="사물함 현황을 불러오는 중입니다." />
+  if (isError) return <ErrorState onRetry={onRetry} />
   if (!resolvedSummary) return <EmptyState title="등록된 락커가 없습니다" />
 
   const { totalCounts, totalAvailable, totalFull, totalBroken } = resolvedSummary

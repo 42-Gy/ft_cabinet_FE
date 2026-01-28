@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom'
 import { LoadingState } from '@/components/molecules/LoadingState'
 import { ErrorState } from '@/components/molecules/ErrorState'
 import { fetchMe } from '@/features/users/api/me'
-import { env } from '@/libs/env'
 
 type CallbackStatus = 'checking' | 'failed'
 
@@ -44,7 +43,7 @@ export const AuthCallbackPage = () => {
       <ErrorState description="로그인 정보를 확인하지 못했습니다. 다시 로그인해 주세요." />
       <Button
         colorScheme="brand"
-        onClick={() => (window.location.href = `${env.authBaseUrl}/oauth2/authorization/42`)}
+        onClick={() => (window.location.href = '/oauth2/authorization/42')}
       >
         다시 로그인하기
       </Button>

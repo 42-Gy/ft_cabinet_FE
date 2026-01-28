@@ -122,14 +122,8 @@ export const HomePage = () => {
 
           {isLoading && (
             <Stack spacing={3} align="center" mt={8} bg="transparent">
-              <Image
-                src="/assets/images/icon_watermelon_loading.png"
-                alt="수박 로딩"
-                boxSize="48px"
-                filter="drop-shadow(0 6px 12px rgba(0,0,0,0.2))"
-              />
               <Text fontSize="sm" color="gray.600">
-                수박이 사물함을 정리 중이에요
+                로딩중
               </Text>
             </Stack>
           )}
@@ -141,7 +135,9 @@ export const HomePage = () => {
               <HomeOverview
                 summaryAll={summaryQuery.data}
                 summaryError={summaryQuery.isError}
+                summaryLoading={summaryQuery.isLoading}
                 onRetry={summaryQuery.refetch}
+                isLoggedIn={isLoggedIn}
               />
             </Box>
           </Box>

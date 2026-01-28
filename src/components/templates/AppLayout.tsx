@@ -41,7 +41,7 @@ export const AppLayout = () => {
 
   const handleLogin = () => {
     if (typeof window !== 'undefined') {
-      window.location.href = `${env.authBaseUrl}/oauth2/authorization/42`
+      window.location.href = '/oauth2/authorization/42'
     }
   }
 
