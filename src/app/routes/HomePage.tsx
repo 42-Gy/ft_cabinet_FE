@@ -1,8 +1,11 @@
 import { Badge, Box, Button, Image, Stack, Text, VStack, useColorModeValue } from '@chakra-ui/react'
 import { useCabinetSummaryAllQuery } from '@/features/lockers/hooks/useLockerData'
 import { HomeOverview } from '@/features/status/components/HomeOverview'
+import { useMeQuery } from '@/features/users/hooks/useMeQuery'
 
 export const HomePage = () => {
+  const { data: me } = useMeQuery()
+  const isLoggedIn = Boolean(me)
   const summaryQuery = useCabinetSummaryAllQuery()
   const isLoading = summaryQuery.isLoading
   const contentWidth = 'min(1200px, calc(100% - 64px))'
