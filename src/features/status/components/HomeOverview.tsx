@@ -54,7 +54,6 @@ interface HomeOverviewProps {
   summaryError?: boolean
   summaryLoading?: boolean
   onRetry?: () => void
-  isLoggedIn?: boolean
 }
 
 export const HomeOverview = ({
@@ -62,7 +61,6 @@ export const HomeOverview = ({
   summaryError,
   summaryLoading,
   onRetry,
-  isLoggedIn = false,
 }: HomeOverviewProps) => {
   const guideModal = useDisclosure()
   const summary2F = useCabinetSummaryQuery({ floor: 2 })

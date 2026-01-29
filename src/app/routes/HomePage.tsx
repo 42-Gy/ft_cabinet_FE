@@ -4,8 +4,7 @@ import { HomeOverview } from '@/features/status/components/HomeOverview'
 import { useMeQuery } from '@/features/users/hooks/useMeQuery'
 
 export const HomePage = () => {
-  const { data: me } = useMeQuery()
-  const isLoggedIn = Boolean(me)
+  useMeQuery()
   const summaryQuery = useCabinetSummaryAllQuery()
   const isLoading = summaryQuery.isLoading
   const contentWidth = 'min(1200px, calc(100% - 64px))'
@@ -140,7 +139,6 @@ export const HomePage = () => {
                 summaryError={summaryQuery.isError}
                 summaryLoading={summaryQuery.isLoading}
                 onRetry={summaryQuery.refetch}
-                isLoggedIn={isLoggedIn}
               />
             </Box>
           </Box>

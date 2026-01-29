@@ -80,6 +80,18 @@ export const MyLockersPage = () => {
     PENALTY_EXEMPTION: '패널티 감면권',
     LENT: '대여권',
   }
+  const resolveItemLabel = (itemType?: string | null, itemName?: string | null) => {
+    const normalizedType = (itemType ?? '').toUpperCase()
+    if (normalizedType in itemTypeLabels) {
+      return itemTypeLabels[normalizedType as UserItemType]
+    }
+    const normalizedName = (itemName ?? '').toLowerCase()
+    if (normalizedName.includes('extension')) return itemTypeLabels.EXTENSION
+    if (normalizedName.includes('swap')) return itemTypeLabels.SWAP
+    if (normalizedName.includes('penalty')) return itemTypeLabels.PENALTY_EXEMPTION
+    if (normalizedName.includes('lent')) return itemTypeLabels.LENT
+    return itemName ?? '아이템'
+  }
 
   const myItems = me?.myItems ?? []
   const coinHistories = me?.coinHistories ?? []
@@ -894,15 +906,3 @@ const TicketCard = ({
     </Box>
   )
 }
-  const resolveItemLabel = (itemType?: string | null, itemName?: string | null) => {
-    const normalizedType = (itemType ?? '').toUpperCase()
-    if (normalizedType in itemTypeLabels) {
-      return itemTypeLabels[normalizedType as UserItemType]
-    }
-    const normalizedName = (itemName ?? '').toLowerCase()
-    if (normalizedName.includes('extension')) return itemTypeLabels.EXTENSION
-    if (normalizedName.includes('swap')) return itemTypeLabels.SWAP
-    if (normalizedName.includes('penalty')) return itemTypeLabels.PENALTY_EXEMPTION
-    if (normalizedName.includes('lent')) return itemTypeLabels.LENT
-    return itemName ?? '아이템'
-  }
