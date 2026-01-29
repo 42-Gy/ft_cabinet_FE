@@ -36,16 +36,16 @@ const guideCards = [
       '42 계정으로 로그인한 뒤 사물함 페이지에서 사용하고 싶은 구역을 선택하면 지금 비어 있는 사물함을 바로 확인할 수 있어요. 원하는 사물함을 고르고 대여하기를 누르면 내 사물함으로 즉시 등록되어 바로 사용 가능합니다.',
   },
   {
-    title: '수박 얻는 법',
+    title: '수박씨 얻는 법',
     summary: '출석하고 공부하면서 수박씨를 모아보세요.',
     detail:
-      '하루에 한 번 출석체크를 하고, 클러스터에서 50시간 이상 활동하면 다음 달 사용할 수 있는 수박씨가 지급돼요. 모은 수박씨는 상점에서 아이템을 구매하는 데 사용할 수 있어요.',
+      '하루에 한 번 출석체크를 하고, 클러스터에서 80시간 이상 활동하면 다음 달 사용할 수 있는 수박씨가 지급돼요. 모은 수박씨는 상점에서 아이템을 구매하는 데 사용할 수 있어요.',
   },
   {
     title: '수박 상점 안내서',
     summary: '사물함에 필요한 아이템을 한 곳에서 관리하세요.',
     detail:
-      '상점에서 대여권, 연장권, 이사권 같은 필요한 아이템을 바로 구매할 수 있어요. 구매한 아이템은 내 사물함에서 바로 적용할 수 있어 사물함 이용을 더 편리하게 만들어줘요.',
+      '상점에서 연장권, 이사권, 패널티 감면권 같은 필요한 아이템을 바로 구매할 수 있어요. 구매한 아이템은 내 사물함에서 바로 적용할 수 있어 사물함 이용을 더 편리하게 만들어줘요.',
   },
 ]
 
@@ -65,8 +65,8 @@ export const HomeOverview = ({
   isLoggedIn = false,
 }: HomeOverviewProps) => {
   const guideModal = useDisclosure()
-  const summary2F = useCabinetSummaryQuery({ floor: 2, enabled: isLoggedIn })
-  const summary3F = useCabinetSummaryQuery({ floor: 3, enabled: isLoggedIn })
+  const summary2F = useCabinetSummaryQuery({ floor: 2 })
+  const summary3F = useCabinetSummaryQuery({ floor: 3 })
   const highlightBg = useColorModeValue('white', 'gray.800')
   const highlightBorder = useColorModeValue('gray.100', 'whiteAlpha.200')
   const sectionText = useColorModeValue('gray.600', 'gray.300')
@@ -83,6 +83,12 @@ export const HomeOverview = ({
     available: useColorModeValue('leaf.400', 'leaf.300'),
     full: useColorModeValue('brand.400', 'brand.300'),
     broken: useColorModeValue('orange.400', 'orange.300'),
+  }
+  const sectionTitleOverrides: Record<number, string> = {
+    2: '섹션 2 (silence zone 측)',
+    3: '섹션 3 (2층 화장실 측)',
+    6: '섹션 6 (3층 화장실 측)',
+    7: '섹션 7 (silence zone 측)',
   }
 
   const sectionSummaryMap = useMemo(() => {
@@ -138,7 +144,7 @@ export const HomeOverview = ({
 
   if (isLoading) return <LoadingState label="사물함 현황을 불러오는 중입니다." />
   if (isError) return <ErrorState onRetry={onRetry} />
-  if (!resolvedSummary) return <EmptyState title="등록된 락커가 없습니다" />
+  if (!resolvedSummary) return <EmptyState title="등록된 사물함이 없습니다" />
 
   const { totalCounts, totalAvailable, totalFull, totalBroken } = resolvedSummary
 
@@ -164,7 +170,7 @@ export const HomeOverview = ({
               bgGradient={
                 guide.title === '사물함 대여법'
                   ? guideGradients.rent
-                  : guide.title === '수박 얻는 법'
+                  : guide.title === '수박씨 얻는 법'
                     ? guideGradients.seed
                     : guideGradients.store
               }
@@ -179,7 +185,7 @@ export const HomeOverview = ({
                 as={
                   guide.title === '사물함 대여법'
                     ? RiLockUnlockLine
-                    : guide.title === '수박 얻는 법'
+                    : guide.title === '수박씨 얻는 법'
                       ? RiSeedlingLine
                       : RiStore2Line
                 }
@@ -227,7 +233,7 @@ export const HomeOverview = ({
               shadow="sm"
             >
               <Badge colorScheme="brand" mb={2}>
-                {section.title}
+                {sectionTitleOverrides[section.id] ?? section.title}
               </Badge>
               {sectionSummaryLoading ? (
                 <Skeleton height="92px" borderRadius="md" />

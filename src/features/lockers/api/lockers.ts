@@ -38,7 +38,7 @@ export const getCabinets = async (
 }
 
 export const getCabinetSummary = async (floor: number): Promise<CabinetSummary[]> => {
-  const { data } = await apiClient.get('/v4/cabinets/status-summary', {
+  const { data } = await publicClient.get('/v4/cabinets/status-summary', {
     params: { floor },
   })
   return coerceArray<CabinetSummary>(unwrapApiResponse<unknown>(data))

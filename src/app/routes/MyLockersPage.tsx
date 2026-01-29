@@ -61,7 +61,7 @@ export const MyLockersPage = () => {
   const [cameraActive, setCameraActive] = useState(false)
   const [cameraReady, setCameraReady] = useState(false)
   const [cameraStarting, setCameraStarting] = useState(false)
-  const [historyTab, setHistoryTab] = useState<'coin' | 'item'>('coin')
+  const [historyTab, setHistoryTab] = useState<'items' | 'coin' | 'item'>('items')
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const cameraReadyRef = useRef(false)
@@ -84,10 +84,6 @@ export const MyLockersPage = () => {
   const myItems = me?.myItems ?? []
   const coinHistories = me?.coinHistories ?? []
   const itemHistories = me?.itemHistories ?? []
-  const usedItemHistories = useMemo(
-    () => itemHistories.filter((history) => history.status === 'USED' || Boolean(history.usedAt)),
-    [itemHistories],
-  )
   const itemCounts = useMemo(() => {
     return myItems.reduce<Record<UserItemType, number>>((acc, item) => {
       acc[item.itemType] = (acc[item.itemType] ?? 0) + 1
@@ -482,6 +478,14 @@ export const MyLockersPage = () => {
               <HStack spacing={2}>
                 <Button
                   size="sm"
+                  variant={historyTab === 'items' ? 'solid' : 'outline'}
+                  colorScheme="brand"
+                  onClick={() => setHistoryTab('items')}
+                >
+                  아이템 목록
+                </Button>
+                <Button
+                  size="sm"
                   variant={historyTab === 'coin' ? 'solid' : 'outline'}
                   colorScheme="brand"
                   onClick={() => setHistoryTab('coin')}
@@ -498,57 +502,55 @@ export const MyLockersPage = () => {
                 </Button>
               </HStack>
             </HStack>
-            <Stack spacing={3}>
-              <TicketCard
-                title="연장권"
-                description="현재 사물함을 15일 연장합니다."
-                count={getCount('EXTENSION')}
-                buttonLabel="연장하기"
-                onClick={() => handleUseTicket('EXTENSION')}
-                isLoading={extendMutation.isPending}
-                isDisabled={!hasLocker}
-                bg={itemBg}
-                textMuted={textMuted}
-                borderColor={borderColor}
-              />
-              <TicketCard
-                title="이사권"
-                description="다른 번호로 이동할 수 있습니다."
-                count={getCount('SWAP')}
-                buttonLabel="이동하기"
-                onClick={() => handleUseTicket('SWAP')}
-                isDisabled={!hasLocker}
-                bg={itemBg}
-                textMuted={textMuted}
-                borderColor={borderColor}
-              />
-              <TicketCard
-                title="패널티 감면권"
-                description="패널티 일수를 1회 면제합니다."
-                count={getCount('PENALTY_EXEMPTION')}
-                buttonLabel="감면하기"
-                onClick={() => handleUseTicket('PENALTY_EXEMPTION')}
-                isLoading={penaltyMutation.isPending}
-                bg={itemBg}
-                textMuted={textMuted}
-                borderColor={borderColor}
-              />
-              <TicketCard
-                title="대여권"
-                description="출석/미션 보상으로만 사용할 수 있습니다."
-                count={getCount('LENT')}
-                buttonLabel="관리자 지급"
-                onClick={() => {}}
-                isDisabled
-                bg={itemBg}
-                textMuted={textMuted}
-                borderColor={borderColor}
-              />
-            </Stack>
-
-            <Divider my={4} />
-
-            {historyTab === 'coin' ? (
+            {historyTab === 'items' ? (
+              <Stack spacing={3}>
+                <TicketCard
+                  title="연장권"
+                  description="현재 사물함을 15일 연장합니다."
+                  count={getCount('EXTENSION')}
+                  buttonLabel="연장하기"
+                  onClick={() => handleUseTicket('EXTENSION')}
+                  isLoading={extendMutation.isPending}
+                  isDisabled={!hasLocker}
+                  bg={itemBg}
+                  textMuted={textMuted}
+                  borderColor={borderColor}
+                />
+                <TicketCard
+                  title="이사권"
+                  description="다른 번호로 이동할 수 있습니다."
+                  count={getCount('SWAP')}
+                  buttonLabel="이동하기"
+                  onClick={() => handleUseTicket('SWAP')}
+                  isDisabled={!hasLocker}
+                  bg={itemBg}
+                  textMuted={textMuted}
+                  borderColor={borderColor}
+                />
+                <TicketCard
+                  title="패널티 감면권"
+                  description="패널티 일수를 1회 면제합니다."
+                  count={getCount('PENALTY_EXEMPTION')}
+                  buttonLabel="감면하기"
+                  onClick={() => handleUseTicket('PENALTY_EXEMPTION')}
+                  isLoading={penaltyMutation.isPending}
+                  bg={itemBg}
+                  textMuted={textMuted}
+                  borderColor={borderColor}
+                />
+                <TicketCard
+                  title="대여권"
+                  description="출석/미션 보상으로만 사용할 수 있습니다."
+                  count={getCount('LENT')}
+                  buttonLabel="관리자 지급"
+                  onClick={() => {}}
+                  isDisabled
+                  bg={itemBg}
+                  textMuted={textMuted}
+                  borderColor={borderColor}
+                />
+              </Stack>
+            ) : historyTab === 'coin' ? (
               coinHistories.length === 0 ? (
                 <EmptyState
                   title="수박씨 내역이 없습니다"
@@ -587,19 +589,16 @@ export const MyLockersPage = () => {
                   </Stack>
                 </Box>
               )
-            ) : usedItemHistories.length === 0 ? (
+            ) : itemHistories.length === 0 ? (
               <EmptyState
-                title="사용한 아이템 내역이 없습니다"
-                description="아이템 사용 기록이 아직 없습니다."
+                title="아이템 내역이 없습니다"
+                description="아이템 구매/사용 기록이 아직 없습니다."
               />
             ) : (
               <Box maxH={{ base: '320px', md: '360px' }} overflowY="auto" pr={1}>
                 <Stack spacing={3}>
-                  {usedItemHistories.map((history, index) => {
-                    const label =
-                      itemTypeLabels[history.itemType as UserItemType] ??
-                      history.itemName ??
-                      '아이템'
+                  {itemHistories.map((history, index) => {
+                    const label = resolveItemLabel(history.itemType, history.itemName)
                     return (
                       <Box
                         key={`${history.date}-${history.itemType}-${index}`}
@@ -616,12 +615,16 @@ export const MyLockersPage = () => {
                             </Text>
                           </Stack>
                           <Stack spacing={1} textAlign="right">
-                            <Text fontWeight="bold">사용됨</Text>
-                            {history.usedAt && (
-                              <Text fontSize="sm" color={textMuted}>
-                                사용일시: {formatDate(history.usedAt)}
-                              </Text>
-                            )}
+                        {history.usedAt ? (
+                          <Text fontWeight="bold">사용됨</Text>
+                        ) : (
+                          <Text fontWeight="bold">&nbsp;</Text>
+                        )}
+                        {history.usedAt && (
+                          <Text fontSize="sm" color={textMuted}>
+                            사용일시: {formatDate(history.usedAt)}
+                          </Text>
+                        )}
                           </Stack>
                         </HStack>
                       </Box>
@@ -891,3 +894,15 @@ const TicketCard = ({
     </Box>
   )
 }
+  const resolveItemLabel = (itemType?: string | null, itemName?: string | null) => {
+    const normalizedType = (itemType ?? '').toUpperCase()
+    if (normalizedType in itemTypeLabels) {
+      return itemTypeLabels[normalizedType as UserItemType]
+    }
+    const normalizedName = (itemName ?? '').toLowerCase()
+    if (normalizedName.includes('extension')) return itemTypeLabels.EXTENSION
+    if (normalizedName.includes('swap')) return itemTypeLabels.SWAP
+    if (normalizedName.includes('penalty')) return itemTypeLabels.PENALTY_EXEMPTION
+    if (normalizedName.includes('lent')) return itemTypeLabels.LENT
+    return itemName ?? '아이템'
+  }

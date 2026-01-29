@@ -4,6 +4,7 @@ import {
   AlertIcon,
   Box,
   ListItem,
+  Link,
   SimpleGrid,
   Text,
   UnorderedList,
@@ -25,12 +26,12 @@ export const PolicyPage = () => {
     {
       title: '대여 기간',
       description:
-        '대여권의 기본 사용 기간은 32일입니다. 대여권 만료 시점은 내 사물함 페이지에서 확인할 수 있으며, 운영 수칙에 위배된 경우 회수 절차가 진행될 수 있습니다.',
+        '대여권의 기본 사용 기간은 31일이며, 대여권은 최대 1개까지 보유할 수 있습니다. 대여권 만료 시점은 내 사물함 페이지에서 확인할 수 있으며, 운영 수칙에 위배된 경우 회수 절차가 진행될 수 있습니다.',
     },
     {
       title: '연장권 사용 규칙',
       description:
-        '연장권은 사용 중인 사물함에 최대 2회까지 사용 가능합니다. 사물함 수요에 따라 연장권 사용이 제한될 수 있습니다.',
+        '연장권은 월 최대 5회 구매/사용 가능하며, 보유 개수도 최대 5개까지 가능합니다. 사물함 수요에 따라 연장권 사용이 제한될 수 있습니다.',
     },
   ]
 
@@ -77,23 +78,30 @@ export const PolicyPage = () => {
           운영 및 문의
         </Text>
         <Text fontSize="sm" color={textMuted} mb={4}>
-          서비스 관련 문의 및 이슈는 Slack DM / seonghan으로 연락 바랍니다.
+          사물함 고장 신고는 Slack 채널 staff_facility_building으로 신고해 주세요.
         </Text>
         <Text fontWeight="bold" mb={4}>
           운영 수칙
         </Text>
         <UnorderedList spacing={3} color={textMuted}>
           <ListItem>사물함은 개인 소지품 보관 용도로만 사용해 주세요.</ListItem>
-          <ListItem>음식물 및 악취·오염 우려 물품의 보관은 금지됩니다.</ListItem>
+          <ListItem>음식물 및 악취 오염 우려 물품의 보관은 금지됩니다.</ListItem>
           <ListItem>
-            월 1회 이상 오프라인 점검을 진행하며, 점검 일정은 최소 3일 전에 공지합니다.
-          </ListItem>
-          <ListItem>
-            무단 점유 또는 정책 위반이 확인될 경우 사물함은 즉시 회수되며 7일간 대여권 사용이
-            제한될 수 있습니다.
+            무단 점유 또는 정책 위반이 확인될 경우 사물함은 회수 될 수 있으며 운영정책에 따라서
+            이용이 제한될 수 있습니다.
           </ListItem>
           <ListItem>정책 변경 사항이 있을 경우 운영진(seonghan)을 통해 공지됩니다.</ListItem>
         </UnorderedList>
+        <Text fontSize="sm" color={textMuted} mt={4}>
+          자세한 운영수칙 보러가기:{' '}
+          <Link
+            href="https://first-hyssop-363.notion.site/SUBAK-Ver-1-f5d3a5fdea39834c9b308151ef0767de?source=copy_link"
+            color="brand.500"
+            isExternal
+          >
+            Notion 링크
+          </Link>
+        </Text>
       </Box>
     </Box>
   )
