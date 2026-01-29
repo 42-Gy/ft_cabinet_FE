@@ -74,10 +74,20 @@ export const MyLockersPage = () => {
   const itemBg = useColorModeValue('gray.50', 'gray.700')
   const earnColor = useColorModeValue('leaf.600', 'leaf.300')
   const spendColor = useColorModeValue('red.500', 'red.300')
+  const itemTypeLabels: Record<UserItemType, string> = {
+    EXTENSION: '연장권',
+    SWAP: '이사권',
+    PENALTY_EXEMPTION: '패널티 감면권',
+    LENT: '대여권',
+  }
 
   const myItems = me?.myItems ?? []
   const coinHistories = me?.coinHistories ?? []
   const itemHistories = me?.itemHistories ?? []
+  const usedItemHistories = useMemo(
+    () => itemHistories.filter((history) => history.status === 'USED' || Boolean(history.usedAt)),
+    [itemHistories],
+  )
   const itemCounts = useMemo(() => {
     return myItems.reduce<Record<UserItemType, number>>((acc, item) => {
       acc[item.itemType] = (acc[item.itemType] ?? 0) + 1
@@ -465,15 +475,30 @@ export const MyLockersPage = () => {
           borderColor={borderColor}
         >
           <Stack spacing={3}>
-            <Text fontSize="lg" fontWeight="bold">
-              내 아이템
-            </Text>
-            {me.myItems.length === 0 ? (
-              <EmptyState
-                title="보유한 아이템이 없습니다"
-                description="스토어에서 연장권/이사권/감면권을 구매해 보세요."
-              />
-            ) : (
+            <HStack justify="space-between" align="center" flexWrap="wrap" gap={3}>
+              <Text fontSize="lg" fontWeight="bold">
+                내 아이템
+              </Text>
+              <HStack spacing={2}>
+                <Button
+                  size="sm"
+                  variant={historyTab === 'coin' ? 'solid' : 'outline'}
+                  colorScheme="brand"
+                  onClick={() => setHistoryTab('coin')}
+                >
+                  수박씨 내역
+                </Button>
+                <Button
+                  size="sm"
+                  variant={historyTab === 'item' ? 'solid' : 'outline'}
+                  colorScheme="brand"
+                  onClick={() => setHistoryTab('item')}
+                >
+                  아이템 사용 내역
+                </Button>
+              </HStack>
+            </HStack>
+            <Box maxH={{ base: '360px', md: '480px' }} overflowY="auto" pr={1}>
               <Stack spacing={3}>
                 <TicketCard
                   title="연장권"
@@ -521,7 +546,7 @@ export const MyLockersPage = () => {
                   borderColor={borderColor}
                 />
               </Stack>
-            )}
+            </Box>
           </Stack>
           <Divider my={6} />
           <Button as={RouterLink} to="/store" colorScheme="brand" variant="solid">
@@ -532,29 +557,9 @@ export const MyLockersPage = () => {
 
       <Box borderRadius="xl" bg={cardBg} p={6} shadow="md" borderWidth={1} borderColor={borderColor}>
         <Stack spacing={4}>
-          <HStack justify="space-between" align="center" flexWrap="wrap" gap={3}>
-            <Text fontSize="lg" fontWeight="bold">
-              재화 내역
-            </Text>
-            <HStack spacing={2}>
-              <Button
-                size="sm"
-                variant={historyTab === 'coin' ? 'solid' : 'outline'}
-                colorScheme="brand"
-                onClick={() => setHistoryTab('coin')}
-              >
-                수박씨 내역
-              </Button>
-              <Button
-                size="sm"
-                variant={historyTab === 'item' ? 'solid' : 'outline'}
-                colorScheme="brand"
-                onClick={() => setHistoryTab('item')}
-              >
-                아이템 사용 내역
-              </Button>
-            </HStack>
-          </HStack>
+          <Text fontSize="lg" fontWeight="bold">
+            재화 내역
+          </Text>
 
           {historyTab === 'coin' ? (
             coinHistories.length === 0 ? (
@@ -593,15 +598,18 @@ export const MyLockersPage = () => {
                 ))}
               </Stack>
             )
-          ) : itemHistories.length === 0 ? (
+          ) : usedItemHistories.length === 0 ? (
             <EmptyState
-              title="아이템 내역이 없습니다"
-              description="아이템 구매/사용 기록이 아직 없습니다."
+              title="사용한 아이템 내역이 없습니다"
+              description="아이템 사용 기록이 아직 없습니다."
             />
           ) : (
             <Stack spacing={3}>
-              {itemHistories.map((history, index) => {
-                const statusLabel = history.status === 'USED' ? '사용됨' : '미사용'
+              {usedItemHistories.map((history, index) => {
+                const label =
+                  itemTypeLabels[history.itemType as UserItemType] ??
+                  history.itemName ??
+                  '아이템'
                 return (
                   <Box
                     key={`${history.date}-${history.itemType}-${index}`}
@@ -612,16 +620,16 @@ export const MyLockersPage = () => {
                   >
                     <HStack justify="space-between" align="center">
                       <Stack spacing={1}>
-                        <Text fontWeight="semibold">{history.itemName}</Text>
+                        <Text fontWeight="semibold">{label}</Text>
                         <Text fontSize="sm" color={textMuted}>
                           {formatDate(history.date)}
                         </Text>
                       </Stack>
                       <Stack spacing={1} textAlign="right">
-                        <Text fontWeight="bold">{statusLabel}</Text>
+                        <Text fontWeight="bold">사용됨</Text>
                         {history.usedAt && (
                           <Text fontSize="sm" color={textMuted}>
-                            사용: {formatDate(history.usedAt)}
+                            사용일시: {formatDate(history.usedAt)}
                           </Text>
                         )}
                       </Stack>
