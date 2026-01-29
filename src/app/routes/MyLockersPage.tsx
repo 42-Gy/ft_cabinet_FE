@@ -835,6 +835,7 @@ export const MyLockersPage = () => {
       </Modal>
 
     </Stack>
+  </Stack>
   )
 }
 
