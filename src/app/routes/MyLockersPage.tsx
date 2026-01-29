@@ -630,7 +630,6 @@ export const MyLockersPage = () => {
                 </Stack>
               </Box>
             )}
-          </Stack>
           <Divider my={6} />
           <Button as={RouterLink} to="/store" colorScheme="brand" variant="solid">
             스토어 바로가기
