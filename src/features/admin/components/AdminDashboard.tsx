@@ -42,6 +42,8 @@ import {
   useAdminPendingCabinetsQuery,
   useAdminPenaltyUsersQuery,
   useAdminStoreStatsQuery,
+  useAdminUsersQuery,
+  useAdminReturnPhotosQuery,
   useAdminUserQuery,
   useAdminWeeklyStatsQuery,
   useCabinetForceReturnMutation,
@@ -60,12 +62,20 @@ import {
   usePenaltyRemoveMutation,
   usePendingCabinetApproveMutation,
 } from '@/features/admin/hooks/useAdminDashboard'
+import {
+  useCalendarEventsQuery,
+  useCreateCalendarEventMutation,
+  useDeleteCalendarEventMutation,
+  useUpdateCalendarEventMutation,
+} from '@/features/calendar/hooks/useCalendar'
 import type {
   AdminBrokenCabinet,
   AdminCoinStatsPoint,
   AdminFloorStatsItem,
   AdminItemUsageStat,
   AdminPenaltyUser,
+  AdminReturnPhotoItem,
+  AdminUserListItem,
   AdminWeeklyStatsPoint,
   CabinetLentType,
   CabinetStatusValue,
@@ -73,6 +83,7 @@ import type {
 import { useCabinetsQuery } from '@/features/lockers/hooks/useLockerData'
 import { extractSectionId, getSectionsByFloor } from '@/features/lockers/data/cabinetSections'
 import type { Cabinet } from '@/types/locker'
+import { formatDate } from '@/utils/date'
 
 type ChartSegment = {
   label: string
@@ -106,6 +117,13 @@ const priceItemOptions = [
 
 const formatNumber = (value: number | null | undefined) =>
   Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })
+
+const formatDateKey = (date: Date) => {
+  const y = date.getFullYear()
+  const m = `${date.getMonth() + 1}`.padStart(2, '0')
+  const d = `${date.getDate()}`.padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
 
 const buildConicGradient = (segments: ChartSegment[], fallbackColor: string) => {
   const total = segments.reduce((sum, segment) => sum + Math.max(segment.value, 0), 0)
@@ -444,6 +462,10 @@ export const AdminDashboard = () => {
   const overdueQuery = useAdminOverdueCabinetsQuery()
   const penaltyUsersQuery = useAdminPenaltyUsersQuery()
   const brokenCabinetsQuery = useAdminBrokenCabinetsQuery()
+  const [usersPage, setUsersPage] = useState(0)
+  const [returnPhotosPage, setReturnPhotosPage] = useState(0)
+  const adminUsersQuery = useAdminUsersQuery(usersPage, 20)
+  const returnPhotosQuery = useAdminReturnPhotosQuery(returnPhotosPage, 10)
 
   const [nameInput, setNameInput] = useState('')
   const [searchedName, setSearchedName] = useState<string | undefined>(undefined)
@@ -495,8 +517,25 @@ export const AdminDashboard = () => {
   const [selectedCabinetIds, setSelectedCabinetIds] = useState<number[]>([])
   const [bundleStatus, setBundleStatus] = useState<CabinetStatusValue>('BROKEN')
   const [bundleNote, setBundleNote] = useState('')
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date())
+  const [eventTitle, setEventTitle] = useState('')
+  const [eventDescription, setEventDescription] = useState('')
+  const [eventDate, setEventDate] = useState(formatDateKey(new Date()))
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(null)
 
   const cabinetsQuery = useCabinetsQuery({ floor: adminFloor, enabled: true })
+  const calendarStart = useMemo(
+    () => formatDateKey(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1)),
+    [calendarMonth],
+  )
+  const calendarEnd = useMemo(
+    () => formatDateKey(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0)),
+    [calendarMonth],
+  )
+  const calendarEventsQuery = useCalendarEventsQuery(calendarStart, calendarEnd, true)
+  const createEventMutation = useCreateCalendarEventMutation()
+  const updateEventMutation = useUpdateCalendarEventMutation()
+  const deleteEventMutation = useDeleteCalendarEventMutation()
 
   const highlightBg = useColorModeValue('white', 'gray.800')
   const highlightBorder = useColorModeValue('gray.100', 'whiteAlpha.200')
@@ -541,6 +580,22 @@ export const AdminDashboard = () => {
     const trimmed = nameInput.trim()
     if (!trimmed) return
     setSearchedName(trimmed)
+  }
+
+  const resetEventForm = () => {
+    setSelectedEventId(null)
+    setEventTitle('')
+    setEventDescription('')
+    setEventDate(formatDateKey(new Date()))
+  }
+
+  const handleSelectEvent = (eventId: number) => {
+    const selected = calendarEvents.find((event) => event.id === eventId)
+    if (!selected) return
+    setSelectedEventId(selected.id)
+    setEventTitle(selected.title)
+    setEventDescription(selected.description ?? '')
+    setEventDate(selected.eventDate)
   }
 
   const userData = userQuery.data
@@ -636,6 +691,21 @@ export const AdminDashboard = () => {
     return Array.isArray(raw) ? raw : []
   }, [brokenCabinetsQuery.data])
 
+  const adminUsers = useMemo<AdminUserListItem[]>(() => {
+    const raw = adminUsersQuery.data?.content
+    return Array.isArray(raw) ? raw : []
+  }, [adminUsersQuery.data?.content])
+
+  const returnPhotos = useMemo<AdminReturnPhotoItem[]>(() => {
+    const raw = returnPhotosQuery.data?.content
+    return Array.isArray(raw) ? raw : []
+  }, [returnPhotosQuery.data?.content])
+
+  const calendarEvents = useMemo(() => {
+    const raw = calendarEventsQuery.data
+    return Array.isArray(raw) ? raw : []
+  }, [calendarEventsQuery.data])
+
   const adminSections = useMemo(() => getSectionsByFloor(adminFloor), [adminFloor])
 
   const cabinets = useMemo<Cabinet[]>(() => {
@@ -714,6 +784,17 @@ export const AdminDashboard = () => {
     item.name,
     `#${item.visibleNum}`,
     `${item.overdueDays}일`,
+  ])
+
+  const adminUserRows = adminUsers.map((user) => [
+    user.name,
+    user.email,
+    user.role ?? '-',
+    formatNumber(user.coin),
+    formatNumber(user.penaltyDays),
+    formatNumber(user.monthlyLogtime),
+    user.isRenting ? '대여중' : '미대여',
+    user.currentCabinetNum ? `#${user.currentCabinetNum}` : '-',
   ])
 
   return (
@@ -1133,6 +1214,39 @@ export const AdminDashboard = () => {
                   emptyTitle="고장 사물함이 없습니다"
                 />
               </SimpleGrid>
+
+              {adminUsersQuery.isLoading ? (
+                <LoadingState label="전체 사용자 목록을 불러오는 중입니다." />
+              ) : adminUsersQuery.isError ? (
+                <ErrorState onRetry={adminUsersQuery.refetch} />
+              ) : (
+                <Stack spacing={3}>
+                  <InfoTable
+                    title="전체 사용자 목록"
+                    columns={['Intra ID', '이메일', '권한', '코인', '패널티', '로그타임', '대여', '사물함']}
+                    rows={adminUserRows}
+                    emptyTitle="사용자 목록이 없습니다"
+                  />
+                  <HStack spacing={3} justify="flex-end">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setUsersPage((prev) => Math.max(prev - 1, 0))}
+                      isDisabled={usersPage === 0}
+                    >
+                      이전
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setUsersPage((prev) => prev + 1)}
+                      isDisabled={usersPage + 1 >= (adminUsersQuery.data?.totalPages ?? usersPage + 1)}
+                    >
+                      다음
+                    </Button>
+                  </HStack>
+                </Stack>
+              )}
 
               <Box borderWidth={1} borderRadius="xl" p={6} bg={highlightBg} borderColor={highlightBorder}>
                 <Stack spacing={4}>
@@ -1798,7 +1912,230 @@ export const AdminDashboard = () => {
           </TabPanel>
 
           <TabPanel px={0}>
-            <EmptyState title="설정 탭은 재화 관리로 이동했습니다" description="아이템 가격과 긴급 공지는 재화 관리 탭에서 관리합니다." />
+            <Stack spacing={6}>
+              <Box borderWidth={1} borderRadius="xl" p={6} bg={highlightBg} borderColor={highlightBorder}>
+                <Stack spacing={4}>
+                  <HStack justify="space-between" flexWrap="wrap" gap={3}>
+                    <Text fontSize="lg" fontWeight="bold">
+                      42 캘린더 일정 관리
+                    </Text>
+                    <HStack spacing={2}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          setCalendarMonth(
+                            new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1),
+                          )
+                        }
+                      >
+                        이전 달
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setCalendarMonth(new Date())}
+                      >
+                        이번 달
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          setCalendarMonth(
+                            new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1),
+                          )
+                        }
+                      >
+                        다음 달
+                      </Button>
+                    </HStack>
+                  </HStack>
+                  <Text fontSize="sm" color={mutedText}>
+                    {calendarStart} ~ {calendarEnd}
+                  </Text>
+
+                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                    <Stack spacing={3}>
+                      <FormControl>
+                        <FormLabel>일정 제목</FormLabel>
+                        <Input
+                          placeholder="예: 반납 마감"
+                          value={eventTitle}
+                          onChange={(event) => setEventTitle(event.target.value)}
+                        />
+                      </FormControl>
+                      <FormControl>
+                        <FormLabel>설명</FormLabel>
+                        <Textarea
+                          placeholder="일정 설명"
+                          value={eventDescription}
+                          onChange={(event) => setEventDescription(event.target.value)}
+                        />
+                      </FormControl>
+                      <FormControl>
+                        <FormLabel>일정 날짜</FormLabel>
+                        <Input
+                          type="date"
+                          value={eventDate}
+                          onChange={(event) => setEventDate(event.target.value)}
+                        />
+                      </FormControl>
+                      <HStack spacing={3} flexWrap="wrap">
+                        <Button
+                          colorScheme="brand"
+                          isLoading={createEventMutation.isPending}
+                          onClick={() => {
+                            if (!eventTitle || !eventDate) return
+                            createEventMutation.mutate({
+                              title: eventTitle,
+                              description: eventDescription,
+                              eventDate,
+                            })
+                            resetEventForm()
+                          }}
+                        >
+                          일정 등록
+                        </Button>
+                        <Button
+                          variant="outline"
+                          colorScheme="brand"
+                          isLoading={updateEventMutation.isPending}
+                          isDisabled={!selectedEventId}
+                          onClick={() => {
+                            if (!selectedEventId || !eventTitle || !eventDate) return
+                            updateEventMutation.mutate({
+                              eventId: selectedEventId,
+                              payload: {
+                                title: eventTitle,
+                                description: eventDescription,
+                                eventDate,
+                              },
+                            })
+                            resetEventForm()
+                          }}
+                        >
+                          일정 수정
+                        </Button>
+                        <Button
+                          variant="outline"
+                          colorScheme="red"
+                          isLoading={deleteEventMutation.isPending}
+                          isDisabled={!selectedEventId}
+                          onClick={() => {
+                            if (!selectedEventId) return
+                            deleteEventMutation.mutate(selectedEventId)
+                            resetEventForm()
+                          }}
+                        >
+                          일정 삭제
+                        </Button>
+                        <Button variant="ghost" onClick={resetEventForm}>
+                          입력 초기화
+                        </Button>
+                      </HStack>
+                    </Stack>
+
+                    <Stack spacing={3}>
+                      <Text fontWeight="bold">이번 달 일정</Text>
+                      {calendarEventsQuery.isLoading ? (
+                        <LoadingState label="일정을 불러오는 중입니다." />
+                      ) : calendarEventsQuery.isError ? (
+                        <ErrorState onRetry={calendarEventsQuery.refetch} />
+                      ) : calendarEvents.length ? (
+                        <Stack spacing={2}>
+                          {calendarEvents.map((event) => (
+                            <Box
+                              key={event.id}
+                              borderWidth={1}
+                              borderRadius="lg"
+                              p={3}
+                              cursor="pointer"
+                              onClick={() => handleSelectEvent(event.id)}
+                            >
+                              <Text fontWeight="semibold">{event.title}</Text>
+                              <Text fontSize="sm" color={mutedText}>
+                                {event.eventDate}
+                              </Text>
+                              {event.description && (
+                                <Text fontSize="sm" color={mutedText} noOfLines={2}>
+                                  {event.description}
+                                </Text>
+                              )}
+                              {event.announcerName && (
+                                <Text fontSize="xs" color={mutedText}>
+                                  등록자: {event.announcerName}
+                                </Text>
+                              )}
+                            </Box>
+                          ))}
+                        </Stack>
+                      ) : (
+                        <EmptyState title="등록된 일정이 없습니다" />
+                      )}
+                    </Stack>
+                  </SimpleGrid>
+                </Stack>
+              </Box>
+
+              <Text fontSize="lg" fontWeight="bold">
+                반납 사진 리스트
+              </Text>
+              {returnPhotosQuery.isLoading ? (
+                <LoadingState label="반납 사진을 불러오는 중입니다." />
+              ) : returnPhotosQuery.isError ? (
+                <ErrorState onRetry={returnPhotosQuery.refetch} />
+              ) : returnPhotos.length ? (
+                <Stack spacing={4}>
+                  <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={4}>
+                    {returnPhotos.map((item) => (
+                      <Box key={item.lentHistoryId} borderWidth={1} borderRadius="xl" overflow="hidden">
+                        <Box bg={highlightBg}>
+                          <Image src={item.photoUrl} alt={`반납 사진 ${item.cabinetVisibleNum}`} w="full" h="180px" objectFit="cover" />
+                        </Box>
+                        <Stack spacing={1} p={4}>
+                          <Text fontWeight="bold">#{item.cabinetVisibleNum}</Text>
+                          <Text fontSize="sm" color={mutedText}>
+                            사용자: {item.userName}
+                          </Text>
+                          <Text fontSize="sm" color={mutedText}>
+                            반납일시: {formatDate(item.returnedAt)}
+                          </Text>
+                          {item.returnMemo && (
+                            <Text fontSize="sm" color={mutedText}>
+                              메모: {item.returnMemo}
+                            </Text>
+                          )}
+                        </Stack>
+                      </Box>
+                    ))}
+                  </SimpleGrid>
+                  <HStack spacing={3} justify="flex-end">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setReturnPhotosPage((prev) => Math.max(prev - 1, 0))}
+                      isDisabled={returnPhotosPage === 0}
+                    >
+                      이전
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setReturnPhotosPage((prev) => prev + 1)}
+                      isDisabled={
+                        returnPhotosPage + 1 >=
+                        (returnPhotosQuery.data?.totalPages ?? returnPhotosPage + 1)
+                      }
+                    >
+                      다음
+                    </Button>
+                  </HStack>
+                </Stack>
+              ) : (
+                <EmptyState title="반납 사진이 없습니다" />
+              )}
+            </Stack>
           </TabPanel>
         </TabPanels>
       </Tabs>

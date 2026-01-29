@@ -3,6 +3,7 @@ import {
   AlertIcon,
   Box,
   Button,
+  HStack,
   SimpleGrid,
   Stack,
   Text,
@@ -14,6 +15,7 @@ import { LoadingState } from '@/components/molecules/LoadingState'
 import { ErrorState } from '@/components/molecules/ErrorState'
 import { EmptyState } from '@/components/molecules/EmptyState'
 import { useAttendanceMutation, useAttendanceQuery } from '@/features/attendance/hooks/useAttendance'
+import { useCalendarEventsQuery } from '@/features/calendar/hooks/useCalendar'
 import { useMeQuery } from '@/features/users/hooks/useMeQuery'
 
 const formatDateKey = (date: Date) => {
@@ -30,17 +32,17 @@ export const AttendancePage = () => {
   const isLoggedIn = Boolean(me)
   const { data, isLoading, isError, refetch } = useAttendanceQuery(isLoggedIn)
   const attendanceMutation = useAttendanceMutation()
-  const [current] = useState(() => new Date())
+  const [current, setCurrent] = useState(() => new Date())
 
-  const attendanceSet = useMemo(
-    () => new Set(Array.isArray(data) ? data : []),
-    [data],
-  )
+  const attendanceSet = useMemo(() => new Set(Array.isArray(data) ? data : []), [data])
   const todayKey = formatDateKey(new Date())
   const hasTodayAttendance = attendanceSet.has(todayKey)
 
   const year = current.getFullYear()
   const month = current.getMonth()
+  const monthStart = useMemo(() => formatDateKey(new Date(year, month, 1)), [year, month])
+  const monthEnd = useMemo(() => formatDateKey(new Date(year, month + 1, 0)), [year, month])
+  const calendarQuery = useCalendarEventsQuery(monthStart, monthEnd, isLoggedIn)
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const firstDay = new Date(year, month, 1).getDay()
 
@@ -50,6 +52,17 @@ export const AttendancePage = () => {
     for (let day = 1; day <= daysInMonth; day += 1) cells.push(day)
     return cells
   }, [firstDay, daysInMonth])
+
+  const eventsByDate = useMemo(() => {
+    const map = new Map<string, Array<{ title: string }>>()
+    const items = calendarQuery.data ?? []
+    for (const event of items) {
+      const list = map.get(event.eventDate) ?? []
+      list.push({ title: event.title })
+      map.set(event.eventDate, list)
+    }
+    return map
+  }, [calendarQuery.data])
 
   const cardBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200')
@@ -68,15 +81,17 @@ export const AttendancePage = () => {
     )
   }
   if (isLoading) return <LoadingState label="출석 기록을 불러오는 중입니다." />
+  if (calendarQuery.isLoading) return <LoadingState label="일정을 불러오는 중입니다." />
   if (isError) return <ErrorState onRetry={refetch} />
+  if (calendarQuery.isError) return <ErrorState onRetry={calendarQuery.refetch} />
 
   const hasRecords = Array.isArray(data) && data.length > 0
 
   return (
     <Stack spacing={6}>
       <PageHeader
-        title="출석 체크"
-        description="매일 출석하면 코인을 지급해 드려요. 출석 기록은 이번 달 달력에서 바로 확인할 수 있습니다."
+        title="42 캘린더"
+        description="출석 기록과 42 일정이 함께 표시됩니다. 이번 달 일정을 한눈에 확인하세요."
       />
 
       <Box borderWidth={1} borderColor={borderColor} borderRadius="xl" bg={cardBg} p={6}>
@@ -106,9 +121,34 @@ export const AttendancePage = () => {
       </Box>
 
       <Box borderWidth={1} borderColor={borderColor} borderRadius="xl" bg={cardBg} p={6}>
-        <Text fontWeight="bold" mb={4}>
-          {year}년 {month + 1}월 출석 달력
-        </Text>
+        <HStack justify="space-between" mb={4} flexWrap="wrap" gap={3}>
+          <Text fontWeight="bold">
+            {year}년 {month + 1}월 일정
+          </Text>
+          <HStack spacing={2}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setCurrent(new Date(year, month - 1, 1))}
+            >
+              이전 달
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setCurrent(new Date())}
+            >
+              이번 달
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setCurrent(new Date(year, month + 1, 1))}
+            >
+              다음 달
+            </Button>
+          </HStack>
+        </HStack>
         <SimpleGrid columns={7} spacing={2} mb={2}>
           {weekdayLabels.map((label) => (
             <Text key={label} textAlign="center" fontWeight="semibold" color={weekdayColor} fontSize="sm">
@@ -123,19 +163,33 @@ export const AttendancePage = () => {
             }
             const dateKey = formatDateKey(new Date(year, month, day))
             const attended = attendanceSet.has(dateKey)
+            const dailyEvents = eventsByDate.get(dateKey) ?? []
             return (
               <Box
                 key={dateKey}
                 borderRadius="md"
-                py={3}
-                textAlign="center"
+                py={2}
+                px={2}
                 bg={attended ? attendedColor : defaultDayBg}
                 color={attended ? attendedText : undefined}
                 borderWidth={attended ? 0 : 1}
                 borderColor={borderColor}
-                fontWeight={attended ? 'bold' : 'medium'}
               >
-                {day}
+                <Stack spacing={1}>
+                  <Text fontWeight={attended ? 'bold' : 'medium'} textAlign="center">
+                    {day}
+                  </Text>
+                  {dailyEvents.slice(0, 2).map((event, idx) => (
+                    <Text key={`${event.title}-${idx}`} fontSize="xs" noOfLines={1}>
+                      {event.title}
+                    </Text>
+                  ))}
+                  {dailyEvents.length > 2 && (
+                    <Text fontSize="xs" color={attended ? attendedText : weekdayColor}>
+                      +{dailyEvents.length - 2}개 더보기
+                    </Text>
+                  )}
+                </Stack>
               </Box>
             )
           })}
