@@ -118,6 +118,11 @@ export const useExtensionTicket = async (): Promise<LockerActionResult> => {
   return toActionResult(data)
 }
 
+export const renewLentCabinet = async (): Promise<LockerActionResult> => {
+  const { data } = await apiClient.post('/v4/lent/renew', {})
+  return toActionResult(data)
+}
+
 export interface SwapCabinetPayload {
   newVisibleNum: number
   file: File

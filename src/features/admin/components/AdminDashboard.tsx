@@ -467,12 +467,11 @@ export const AdminDashboard = () => {
 
   const [coinAmount, setCoinAmount] = useState('100')
   const [coinReason, setCoinReason] = useState('관리자 지급')
-  const [coinRevokeReason, setCoinRevokeReason] = useState('지급 오류 회수')
   const [penaltyDays, setPenaltyDays] = useState('1')
   const [penaltyReason, setPenaltyReason] = useState('관리자 부여')
   const [itemName, setItemName] = useState(itemGrantOptions[0].value)
   const [itemReason, setItemReason] = useState('관리자 지급')
-  const [itemRevokeName, setItemRevokeName] = useState(itemGrantOptions[0].value)
+  const [itemQuantity, setItemQuantity] = useState('1')
   const [itemRevokeAmount, setItemRevokeAmount] = useState('1')
   const [logtimeValue, setLogtimeValue] = useState('0')
 
@@ -1268,49 +1267,46 @@ export const AdminDashboard = () => {
                               <NumberInputField placeholder="수량" />
                             </NumberInput>
                             <Textarea
-                              placeholder="지급 사유"
+                              placeholder="사유"
                               value={coinReason}
                               onChange={(event) => setCoinReason(event.target.value)}
                             />
-                            <Button
-                              colorScheme="green"
-                              isLoading={coinMutation.isPending}
-                              onClick={() =>
-                                coinMutation.mutate(
-                                  {
-                                    name: userData.name,
-                                    payload: { amount: Number(coinAmount), reason: coinReason },
-                                  },
-                                  { onSuccess: () => userQuery.refetch() },
-                                )
-                              }
-                            >
-                              코인 지급
-                            </Button>
-                            <Textarea
-                              placeholder="회수 사유"
-                              value={coinRevokeReason}
-                              onChange={(event) => setCoinRevokeReason(event.target.value)}
-                            />
-                            <Button
-                              colorScheme="red"
-                              variant="outline"
-                              isLoading={coinRevokeMutation.isPending}
-                              onClick={() =>
-                                coinRevokeMutation.mutate(
-                                  {
-                                    name: userData.name,
-                                    payload: {
-                                      amount: Number(coinAmount),
-                                      reason: coinRevokeReason,
+                            <HStack spacing={2}>
+                              <Button
+                                colorScheme="green"
+                                isLoading={coinMutation.isPending}
+                                onClick={() =>
+                                  coinMutation.mutate(
+                                    {
+                                      name: userData.name,
+                                      payload: { amount: Number(coinAmount), reason: coinReason },
                                     },
-                                  },
-                                  { onSuccess: () => userQuery.refetch() },
-                                )
-                              }
-                            >
-                              코인 회수
-                            </Button>
+                                    { onSuccess: () => userQuery.refetch() },
+                                  )
+                                }
+                              >
+                                코인 지급
+                              </Button>
+                              <Button
+                                colorScheme="red"
+                                variant="outline"
+                                isLoading={coinRevokeMutation.isPending}
+                                onClick={() =>
+                                  coinRevokeMutation.mutate(
+                                    {
+                                      name: userData.name,
+                                      payload: {
+                                        amount: Number(coinAmount),
+                                        reason: coinReason,
+                                      },
+                                    },
+                                    { onSuccess: () => userQuery.refetch() },
+                                  )
+                                }
+                              >
+                                코인 회수
+                              </Button>
+                            </HStack>
                           </Stack>
                         </FormControl>
 
@@ -1386,36 +1382,58 @@ export const AdminDashboard = () => {
                                 </option>
                               ))}
                             </Select>
+                            <NumberInput
+                              value={itemQuantity}
+                              min={1}
+                              onChange={(value) => setItemQuantity(value)}
+                            >
+                              <NumberInputField placeholder="지급 수량" />
+                            </NumberInput>
                             <Textarea
-                              placeholder="지급 사유"
+                              placeholder="사유"
                               value={itemReason}
                               onChange={(event) => setItemReason(event.target.value)}
                             />
-                            <Button
-                              colorScheme="brand"
-                              isLoading={itemGrantMutation.isPending}
-                              onClick={() =>
-                                itemGrantMutation.mutate(
-                                  {
-                                    name: userData.name,
-                                    payload: { itemName, reason: itemReason },
-                                  },
-                                  { onSuccess: () => userQuery.refetch() },
-                                )
-                              }
-                            >
-                              아이템 지급
-                            </Button>
-
-                            <Divider />
-
-                            <Select value={itemRevokeName} onChange={(event) => setItemRevokeName(event.target.value)}>
-                              {itemGrantOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </Select>
+                            <HStack spacing={2}>
+                              <Button
+                                colorScheme="brand"
+                                isLoading={itemGrantMutation.isPending}
+                                onClick={() =>
+                                  itemGrantMutation.mutate(
+                                    {
+                                      name: userData.name,
+                                      payload: {
+                                        itemName,
+                                        reason: itemReason,
+                                        quantity: Number(itemQuantity),
+                                      },
+                                    },
+                                    { onSuccess: () => userQuery.refetch() },
+                                  )
+                                }
+                              >
+                                아이템 지급
+                              </Button>
+                              <Button
+                                colorScheme="red"
+                                variant="outline"
+                                isLoading={itemRevokeMutation.isPending}
+                                onClick={() =>
+                                  itemRevokeMutation.mutate(
+                                    {
+                                      name: userData.name,
+                                      payload: {
+                                        itemName,
+                                        amount: Number(itemRevokeAmount),
+                                      },
+                                    },
+                                    { onSuccess: () => userQuery.refetch() },
+                                  )
+                                }
+                              >
+                                아이템 회수
+                              </Button>
+                            </HStack>
                             <NumberInput
                               value={itemRevokeAmount}
                               min={1}
@@ -1423,25 +1441,6 @@ export const AdminDashboard = () => {
                             >
                               <NumberInputField placeholder="회수 수량" />
                             </NumberInput>
-                            <Button
-                              colorScheme="red"
-                              variant="outline"
-                              isLoading={itemRevokeMutation.isPending}
-                              onClick={() =>
-                                itemRevokeMutation.mutate(
-                                  {
-                                    name: userData.name,
-                                    payload: {
-                                      itemName: itemRevokeName,
-                                      amount: Number(itemRevokeAmount),
-                                    },
-                                  },
-                                  { onSuccess: () => userQuery.refetch() },
-                                )
-                              }
-                            >
-                              아이템 회수
-                            </Button>
                           </Stack>
                         </FormControl>
                       </SimpleGrid>

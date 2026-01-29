@@ -21,7 +21,6 @@ import {
   useColorModeValue,
   useDisclosure,
 } from '@chakra-ui/react'
-import { Link as RouterLink } from 'react-router-dom'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { PageHeader } from '@/components/molecules/PageHeader'
 import { LoadingState } from '@/components/molecules/LoadingState'
@@ -33,6 +32,7 @@ import {
   useCheckReturnImageMutation,
   useExtendTicketMutation,
   usePenaltyTicketMutation,
+  useRenewTicketMutation,
   useReturnCabinetMutation,
 } from '@/features/lockers/hooks/useLockerData'
 import { useNavigate } from 'react-router-dom'
@@ -44,6 +44,7 @@ export const MyLockersPage = () => {
   const returnMutation = useReturnCabinetMutation()
   const imageCheckMutation = useCheckReturnImageMutation()
   const extendMutation = useExtendTicketMutation()
+  const renewMutation = useRenewTicketMutation()
   const penaltyMutation = usePenaltyTicketMutation()
   const autoExtensionMutation = useAutoExtensionMutation()
   const returnModal = useDisclosure()
@@ -85,12 +86,30 @@ export const MyLockersPage = () => {
     if (normalizedType in itemTypeLabels) {
       return itemTypeLabels[normalizedType as UserItemType]
     }
+    if (normalizedType.includes('SAWP')) return itemTypeLabels.SWAP
     const normalizedName = (itemName ?? '').toLowerCase()
     if (normalizedName.includes('extension')) return itemTypeLabels.EXTENSION
     if (normalizedName.includes('swap')) return itemTypeLabels.SWAP
     if (normalizedName.includes('penalty')) return itemTypeLabels.PENALTY_EXEMPTION
     if (normalizedName.includes('lent')) return itemTypeLabels.LENT
     return itemName ?? '아이템'
+  }
+
+  const formatHistoryDate = (value?: string | null) => {
+    if (!value) return '-'
+    const koreanMatch = value.match(/(\d{1,2})월\s*(\d{1,2})일\s*(\d{1,2}):(\d{2})/)
+    const pad2 = (target: string | number) => String(target).padStart(2, '0')
+    if (koreanMatch) {
+      const [, month, day, hour, minute] = koreanMatch
+      return `${pad2(month)}월 ${pad2(day)}일 ${pad2(hour)}시 ${pad2(minute)}분`
+    }
+    const parsed = new Date(value)
+    if (Number.isNaN(parsed.getTime())) {
+      return value
+    }
+    return `${pad2(parsed.getMonth() + 1)}월 ${pad2(parsed.getDate())}일 ${pad2(
+      parsed.getHours(),
+    )}시 ${pad2(parsed.getMinutes())}분`
   }
 
   const myItems = me?.myItems ?? []
@@ -460,9 +479,20 @@ export const MyLockersPage = () => {
                   isDisabled={autoExtensionMutation.isPending}
                 />
               </FormControl>
-              <Button colorScheme="red" onClick={returnModal.onOpen} alignSelf="flex-start">
-                반납하기
-              </Button>
+              <HStack spacing={3}>
+                <Button colorScheme="red" onClick={returnModal.onOpen}>
+                  반납하기
+                </Button>
+                <Button
+                  colorScheme="brand"
+                  variant="outline"
+                  onClick={() => renewMutation.mutate()}
+                  isLoading={renewMutation.isPending}
+                  isDisabled={getCount('LENT') === 0}
+                >
+                  수동 연장하기
+                </Button>
+              </HStack>
             </Stack>
           ) : (
             <EmptyState
@@ -514,143 +544,160 @@ export const MyLockersPage = () => {
                 </Button>
               </HStack>
             </HStack>
-            {historyTab === 'items' ? (
-              <Stack spacing={3}>
-                <TicketCard
-                  title="연장권"
-                  description="현재 사물함을 15일 연장합니다."
-                  count={getCount('EXTENSION')}
-                  buttonLabel="연장하기"
-                  onClick={() => handleUseTicket('EXTENSION')}
-                  isLoading={extendMutation.isPending}
-                  isDisabled={!hasLocker}
-                  bg={itemBg}
-                  textMuted={textMuted}
-                  borderColor={borderColor}
-                />
-                <TicketCard
-                  title="이사권"
-                  description="다른 번호로 이동할 수 있습니다."
-                  count={getCount('SWAP')}
-                  buttonLabel="이동하기"
-                  onClick={() => handleUseTicket('SWAP')}
-                  isDisabled={!hasLocker}
-                  bg={itemBg}
-                  textMuted={textMuted}
-                  borderColor={borderColor}
-                />
-                <TicketCard
-                  title="패널티 감면권"
-                  description="패널티 일수를 1회 면제합니다."
-                  count={getCount('PENALTY_EXEMPTION')}
-                  buttonLabel="감면하기"
-                  onClick={() => handleUseTicket('PENALTY_EXEMPTION')}
-                  isLoading={penaltyMutation.isPending}
-                  bg={itemBg}
-                  textMuted={textMuted}
-                  borderColor={borderColor}
-                />
-                <TicketCard
-                  title="대여권"
-                  description="출석/미션 보상으로만 사용할 수 있습니다."
-                  count={getCount('LENT')}
-                  buttonLabel="관리자 지급"
-                  onClick={() => {}}
-                  isDisabled
-                  bg={itemBg}
-                  textMuted={textMuted}
-                  borderColor={borderColor}
-                />
-              </Stack>
-            ) : historyTab === 'coin' ? (
-              coinHistories.length === 0 ? (
+            <Box minH={{ base: '600px', md: '600px' }}>
+              {historyTab === 'items' ? (
+                <Stack spacing={3}>
+                  {(() => {
+                    const count = getCount('EXTENSION')
+                    const useStore = count === 0
+                    return (
+                      <TicketCard
+                        title="연장권"
+                        description="현재 사물함을 15일 연장합니다."
+                        count={count}
+                        buttonLabel={useStore ? '스토어 가서 구매하기' : '연장하기'}
+                        onClick={useStore ? () => navigate('/store') : () => handleUseTicket('EXTENSION')}
+                        isLoading={extendMutation.isPending}
+                        isDisabled={!useStore && !hasLocker}
+                        allowZeroAction={useStore}
+                        bg={itemBg}
+                        textMuted={textMuted}
+                        borderColor={borderColor}
+                      />
+                    )
+                  })()}
+                  {(() => {
+                    const count = getCount('SWAP')
+                    const useStore = count === 0
+                    return (
+                      <TicketCard
+                        title="이사권"
+                        description="다른 번호로 이동할 수 있습니다."
+                        count={count}
+                        buttonLabel={useStore ? '스토어 가서 구매하기' : '이동하기'}
+                        onClick={useStore ? () => navigate('/store') : () => handleUseTicket('SWAP')}
+                        isDisabled={!useStore && !hasLocker}
+                        allowZeroAction={useStore}
+                        bg={itemBg}
+                        textMuted={textMuted}
+                        borderColor={borderColor}
+                      />
+                    )
+                  })()}
+                  {(() => {
+                    const count = getCount('PENALTY_EXEMPTION')
+                    const useStore = count === 0
+                    return (
+                      <TicketCard
+                        title="패널티 감면권"
+                        description="패널티 일수를 1회 면제합니다."
+                        count={count}
+                        buttonLabel={useStore ? '스토어 가서 구매하기' : '감면하기'}
+                        onClick={
+                          useStore ? () => navigate('/store') : () => handleUseTicket('PENALTY_EXEMPTION')
+                        }
+                        isLoading={penaltyMutation.isPending}
+                        isDisabled={!useStore && !hasLocker}
+                        allowZeroAction={useStore}
+                        bg={itemBg}
+                        textMuted={textMuted}
+                        borderColor={borderColor}
+                      />
+                    )
+                  })()}
+                  <TicketCard
+                    title="대여권"
+                    description="출석/미션 보상으로만 사용할 수 있습니다."
+                    count={getCount('LENT')}
+                    buttonLabel="관리자 지급"
+                    onClick={() => {}}
+                    isDisabled
+                    bg={itemBg}
+                    textMuted={textMuted}
+                    borderColor={borderColor}
+                  />
+                </Stack>
+              ) : historyTab === 'coin' ? (
+                coinHistories.length === 0 ? (
+                  <EmptyState
+                    title="수박씨 내역이 없습니다"
+                    description="출석 보상이나 아이템 사용 내역이 아직 없습니다."
+                  />
+                ) : (
+                  <Box maxH={{ base: '320px', md: '360px' }} overflowY="auto" pr={1}>
+                    <Stack spacing={3}>
+                      {coinHistories.map((history, index) => (
+                        <Box
+                          key={`${history.date}-${history.type}-${index}`}
+                          borderRadius="md"
+                          bg={itemBg}
+                          px={4}
+                          py={3}
+                        >
+                          <HStack justify="space-between" align="center">
+                            <Stack spacing={1}>
+                              <Text fontWeight="semibold">
+                                {history.reason ?? '수박씨 변동'}
+                              </Text>
+                              <Text fontSize="sm" color={textMuted}>
+                                {formatHistoryDate(history.date)}
+                              </Text>
+                            </Stack>
+                            <Text
+                              fontWeight="bold"
+                              color={history.type === 'EARN' ? earnColor : spendColor}
+                            >
+                              {history.amount > 0 ? '+' : ''}
+                              {history.amount.toLocaleString()} 수박씨
+                            </Text>
+                          </HStack>
+                        </Box>
+                      ))}
+                    </Stack>
+                  </Box>
+                )
+              ) : itemHistories.length === 0 ? (
                 <EmptyState
-                  title="수박씨 내역이 없습니다"
-                  description="출석 보상이나 아이템 사용 내역이 아직 없습니다."
+                  title="아이템 내역이 없습니다"
+                  description="아이템 구매/사용 기록이 아직 없습니다."
                 />
               ) : (
                 <Box maxH={{ base: '320px', md: '360px' }} overflowY="auto" pr={1}>
                   <Stack spacing={3}>
-                    {coinHistories.map((history, index) => (
-                      <Box
-                        key={`${history.date}-${history.type}-${index}`}
-                        borderRadius="md"
-                        bg={itemBg}
-                        px={4}
-                        py={3}
-                      >
-                        <HStack justify="space-between" align="center">
-                          <Stack spacing={1}>
-                            <Text fontWeight="semibold">
-                              {history.reason ?? '수박씨 변동'}
-                            </Text>
-                            <Text fontSize="sm" color={textMuted}>
-                              {formatDate(history.date)}
-                            </Text>
-                          </Stack>
-                          <Text
-                            fontWeight="bold"
-                            color={history.type === 'EARN' ? earnColor : spendColor}
-                          >
-                            {history.amount > 0 ? '+' : ''}
-                            {history.amount.toLocaleString()} 수박씨
-                          </Text>
-                        </HStack>
-                      </Box>
-                    ))}
+                    {itemHistories.map((history, index) => {
+                      const label = resolveItemLabel(history.itemType, history.itemName)
+                      return (
+                        <Box
+                          key={`${history.date}-${history.itemType}-${index}`}
+                          borderRadius="md"
+                          bg={itemBg}
+                          px={4}
+                          py={3}
+                        >
+                          <HStack justify="space-between" align="center">
+                            <Stack spacing={1}>
+                              <Text fontWeight="semibold">{label}</Text>
+                              <Text fontSize="sm" color={textMuted}>
+                                {formatHistoryDate(history.date)}
+                              </Text>
+                            </Stack>
+                            <Stack spacing={1} textAlign="right">
+                              {history.usedAt && (
+                                <Text fontSize="sm" color={textMuted}>
+                                  사용일시: {formatHistoryDate(history.usedAt)}
+                                </Text>
+                              )}
+                            </Stack>
+                          </HStack>
+                        </Box>
+                      )
+                    })}
                   </Stack>
                 </Box>
-              )
-            ) : itemHistories.length === 0 ? (
-              <EmptyState
-                title="아이템 내역이 없습니다"
-                description="아이템 구매/사용 기록이 아직 없습니다."
-              />
-            ) : (
-              <Box maxH={{ base: '320px', md: '360px' }} overflowY="auto" pr={1}>
-                <Stack spacing={3}>
-                  {itemHistories.map((history, index) => {
-                    const label = resolveItemLabel(history.itemType, history.itemName)
-                    return (
-                      <Box
-                        key={`${history.date}-${history.itemType}-${index}`}
-                        borderRadius="md"
-                        bg={itemBg}
-                        px={4}
-                        py={3}
-                      >
-                        <HStack justify="space-between" align="center">
-                          <Stack spacing={1}>
-                            <Text fontWeight="semibold">{label}</Text>
-                            <Text fontSize="sm" color={textMuted}>
-                              {formatDate(history.date)}
-                            </Text>
-                          </Stack>
-                          <Stack spacing={1} textAlign="right">
-                        {history.usedAt ? (
-                          <Text fontWeight="bold">사용됨</Text>
-                        ) : (
-                          <Text fontWeight="bold">&nbsp;</Text>
-                        )}
-                        {history.usedAt && (
-                          <Text fontSize="sm" color={textMuted}>
-                            사용일시: {formatDate(history.usedAt)}
-                          </Text>
-                        )}
-                          </Stack>
-                        </HStack>
-                      </Box>
-                    )
-                  })}
-                </Stack>
-              </Box>
-            )}
-          <Divider my={6} />
-          <Button as={RouterLink} to="/store" colorScheme="brand" variant="solid">
-            스토어 바로가기
-          </Button>
-        </Stack>
-      </Box>
+              )}
+            </Box>
+          </Stack>
+        </Box>
 
       <Modal isOpen={returnModal.isOpen} onClose={handleReturnClose} size="lg">
         <ModalOverlay />
@@ -862,6 +909,7 @@ interface TicketCardProps {
   onClick: () => void
   isLoading?: boolean
   isDisabled?: boolean
+  allowZeroAction?: boolean
   bg: string
   textMuted: string
   borderColor: string
@@ -875,11 +923,12 @@ const TicketCard = ({
   onClick,
   isLoading,
   isDisabled,
+  allowZeroAction,
   bg,
   textMuted,
   borderColor,
 }: TicketCardProps) => {
-  const disabled = isDisabled || count === 0
+  const disabled = isDisabled || (!allowZeroAction && count === 0)
 
   return (
     <Box borderWidth={1} borderRadius="lg" p={4} borderColor={borderColor} bg={bg}>

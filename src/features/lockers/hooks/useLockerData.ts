@@ -10,6 +10,7 @@ import {
   getCabinets,
   rentCabinet,
   reserveCabinet,
+  renewLentCabinet,
   returnCabinet,
   swapCabinet,
   updateAutoExtension,
@@ -264,6 +265,22 @@ export const usePenaltyTicketMutation = () => {
       invalidate()
     },
     onError: (error) => toast({ description: parseErrorMessage(error), status: 'error' }),
+  })
+}
+
+export const useRenewTicketMutation = () => {
+  const toast = useToast()
+  const invalidate = useInvalidateLockerQueries()
+
+  return useMutation<LockerActionResult>({
+    mutationFn: renewLentCabinet,
+    onSuccess: (result) => {
+      toast({ description: result.message ?? '대여권 연장이 완료되었습니다.', status: 'success' })
+      invalidate()
+    },
+    onError: (error) => {
+      toast({ description: parseErrorMessage(error), status: 'error' })
+    },
   })
 }
 

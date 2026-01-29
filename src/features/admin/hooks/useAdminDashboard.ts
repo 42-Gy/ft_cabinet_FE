@@ -9,11 +9,13 @@ import {
   fetchAdminFloorStats,
   fetchAdminStoreStats,
   fetchAdminUserDetail,
+  fetchAdminUsers,
   fetchAdminWeeklyStats,
   fetchBrokenCabinets,
   fetchCabinetDetail,
   fetchCabinetHistory,
   fetchCabinetPendingList,
+  fetchReturnPhotos,
   fetchCoinStats,
   fetchItemUsageStats,
   fetchOverdueUsers,
@@ -43,6 +45,8 @@ import type {
   AdminPenaltyUser,
   AdminStoreStats,
   AdminWeeklyStats,
+  AdminReturnPhotoPage,
+  AdminUserListPage,
   CabinetStatusBundleRequest,
   CabinetStatusRequest,
   CoinProvideRequest,
@@ -65,6 +69,8 @@ export const adminQueryKeys = {
   attendance: (startDate?: string, endDate?: string) =>
     ['admin', 'attendance', startDate ?? '', endDate ?? ''] as const,
   user: (name?: string) => ['admin', 'user', name ?? ''] as const,
+  users: (page = 0, size = 20, sort = '') =>
+    ['admin', 'users', page, size, sort] as const,
   cabinet: (visibleNum?: number) => ['admin', 'cabinet', visibleNum ?? 0] as const,
   pending: ['admin', 'cabinets', 'pending'] as const,
   overdue: ['admin', 'cabinets', 'overdue'] as const,
@@ -72,6 +78,8 @@ export const adminQueryKeys = {
   brokenCabinets: ['admin', 'cabinets', 'broken'] as const,
   history: (visibleNum?: number, page = 0) =>
     ['admin', 'cabinets', 'history', visibleNum ?? 0, page] as const,
+  returnPhotos: (page = 0, size = 10) =>
+    ['admin', 'returns', 'photos', page, size] as const,
 }
 
 export const useAdminDashboardQuery = () =>
@@ -126,6 +134,12 @@ export const useAdminUserQuery = (name?: string) =>
     enabled: Boolean(name),
   })
 
+export const useAdminUsersQuery = (page = 0, size = 20, sort?: string) =>
+  useQuery<AdminUserListPage>({
+    queryKey: adminQueryKeys.users(page, size, sort ?? ''),
+    queryFn: () => fetchAdminUsers(page, size, sort),
+  })
+
 export const useAdminCabinetDetailQuery = (visibleNum?: number) =>
   useQuery({
     queryKey: adminQueryKeys.cabinet(visibleNum),
@@ -168,6 +182,12 @@ export const useAdminCabinetHistoryQuery = (visibleNum?: number, page = 0, size 
       return fetchCabinetHistory(visibleNum, page, size)
     },
     enabled: Boolean(visibleNum),
+  })
+
+export const useAdminReturnPhotosQuery = (page = 0, size = 10) =>
+  useQuery<AdminReturnPhotoPage>({
+    queryKey: adminQueryKeys.returnPhotos(page, size),
+    queryFn: () => fetchReturnPhotos(page, size),
   })
 
 const useAdminMutationToast = () => {

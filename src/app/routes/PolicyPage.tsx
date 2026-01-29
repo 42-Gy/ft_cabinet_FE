@@ -3,8 +3,8 @@ import {
   AlertDescription,
   AlertIcon,
   Box,
-  ListItem,
   Link,
+  ListItem,
   SimpleGrid,
   Text,
   UnorderedList,
@@ -31,13 +31,13 @@ export const PolicyPage = () => {
     {
       title: '연장권 사용 규칙',
       description:
-        '연장권은 월 최대 5회 구매/사용 가능하며, 보유 개수도 최대 5개까지 가능합니다. 사물함 수요에 따라 연장권 사용이 제한될 수 있습니다.',
+        '연장권은 월 최대 5회 구매 및 사용 가능하며, 보유 개수도 최대 5개까지 가능합니다. 사물함 수요에 따라 연장권 사용이 제한될 수 있습니다.',
     },
   ]
 
   return (
     <Box>
-      <PageHeader title="이용약관" description={`최종 업데이트: ${env.policyUpdatedAt}`} />
+      <PageHeader title="이용약관" />
       <Text fontSize="sm" color={textMuted} textAlign="right" mb={4}>
         최종 업데이트: {env.policyUpdatedAt}
       </Text>
@@ -78,6 +78,9 @@ export const PolicyPage = () => {
           운영 및 문의
         </Text>
         <Text fontSize="sm" color={textMuted} mb={4}>
+          운영 및 문의사항은 seonghan으로 슬랙 dm 보내주세요.
+        </Text>
+        <Text fontSize="sm" color={textMuted} mb={4}>
           사물함 고장 신고는 Slack 채널 staff_facility_building으로 신고해 주세요.
         </Text>
         <Text fontWeight="bold" mb={4}>
@@ -90,7 +93,6 @@ export const PolicyPage = () => {
             무단 점유 또는 정책 위반이 확인될 경우 사물함은 회수 될 수 있으며 운영정책에 따라서
             이용이 제한될 수 있습니다.
           </ListItem>
-          <ListItem>정책 변경 사항이 있을 경우 운영진(seonghan)을 통해 공지됩니다.</ListItem>
         </UnorderedList>
         <Text fontSize="sm" color={textMuted} mt={4}>
           자세한 운영수칙 보러가기:{' '}

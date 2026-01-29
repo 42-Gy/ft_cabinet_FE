@@ -19,6 +19,30 @@ export interface AdminUserDetail {
   currentCabinetNum?: number | null
 }
 
+export interface AdminUserListItem {
+  id: number
+  name: string
+  email: string
+  role: string
+  coin: number
+  penaltyDays: number
+  monthlyLogtime: number
+  blackholedAt?: string | null
+  isRenting?: boolean
+  currentCabinetNum?: number | null
+}
+
+export interface AdminUserListPage {
+  content: AdminUserListItem[]
+  totalPages: number
+  totalElements: number
+  number: number
+  size: number
+  numberOfElements: number
+  first: boolean
+  last: boolean
+}
+
 export interface CoinProvideRequest {
   amount: number
   reason: string
@@ -37,6 +61,7 @@ export interface PenaltyAssignRequest {
 export interface ItemGrantRequest {
   itemName: string
   reason: string
+  quantity: number
 }
 
 export interface ItemRevokeRequest {
@@ -138,6 +163,26 @@ export interface AdminCabinetHistoryPage {
   content: AdminCabinetHistoryItem[]
   totalPages: number
   totalElements: number
+}
+
+export interface AdminReturnPhotoItem {
+  lentHistoryId: number
+  cabinetVisibleNum: number
+  userName: string
+  photoUrl: string
+  returnedAt: string
+  returnMemo?: string | null
+}
+
+export interface AdminReturnPhotoPage {
+  content: AdminReturnPhotoItem[]
+  totalPages: number
+  totalElements: number
+  number: number
+  size: number
+  numberOfElements: number
+  first: boolean
+  last: boolean
 }
 
 export interface AdminOverdueUser {

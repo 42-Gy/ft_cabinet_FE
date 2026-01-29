@@ -7,6 +7,8 @@ import type {
   AdminCabinetPendingItem,
   AdminDashboardStats,
   AdminFloorStatsResponse,
+  AdminReturnPhotoPage,
+  AdminUserListPage,
   AdminPenaltyUser,
   AdminBrokenCabinet,
   AdminOverdueUser,
@@ -37,6 +39,17 @@ export const fetchAdminDashboard = async (): Promise<AdminDashboardStats> => {
 export const fetchAdminUserDetail = async (name: string): Promise<AdminUserDetail> => {
   const { data } = await apiClient.get(`${BASE_PATH}/users/${name}`)
   return unwrapApiResponse<AdminUserDetail>(data)
+}
+
+export const fetchAdminUsers = async (
+  page = 0,
+  size = 20,
+  sort?: string,
+): Promise<AdminUserListPage> => {
+  const { data } = await apiClient.get(`${BASE_PATH}/users`, {
+    params: { page, size, sort },
+  })
+  return unwrapApiResponse<AdminUserListPage>(data)
 }
 
 export const fetchAdminFloorStats = async (): Promise<AdminFloorStatsResponse> => {
@@ -170,6 +183,16 @@ export const fetchCabinetHistory = async (
     params: { page, size },
   })
   return unwrapApiResponse<AdminCabinetHistoryPage>(data)
+}
+
+export const fetchReturnPhotos = async (
+  page = 0,
+  size = 10,
+): Promise<AdminReturnPhotoPage> => {
+  const { data } = await apiClient.get(`${BASE_PATH}/returns/photos`, {
+    params: { page, size },
+  })
+  return unwrapApiResponse<AdminReturnPhotoPage>(data)
 }
 
 export const fetchOverdueUsers = async (): Promise<AdminOverdueUser[]> => {

@@ -13,16 +13,21 @@ const parseKoreanDateTime = (value: string) => {
   return Number.isNaN(date.getTime()) ? null : date
 }
 
-export const formatDate = (value: string) => {
+export const formatDate = (value?: string | null) => {
+  if (!value) return '-'
   const parsed = parseKoreanDateTime(value)
   const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value)
   const date = parsed ?? new Date(value)
   if (Number.isNaN(date.getTime())) {
     return value
   }
-  return new Intl.DateTimeFormat('ko-KR', {
-    month: 'short',
-    day: 'numeric',
-    ...(isDateOnly ? {} : { hour: '2-digit', minute: '2-digit' }),
-  }).format(date)
+  try {
+    return new Intl.DateTimeFormat('ko-KR', {
+      month: 'short',
+      day: 'numeric',
+      ...(isDateOnly ? {} : { hour: '2-digit', minute: '2-digit' }),
+    }).format(date)
+  } catch {
+    return value
+  }
 }
