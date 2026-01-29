@@ -498,147 +498,143 @@ export const MyLockersPage = () => {
                 </Button>
               </HStack>
             </HStack>
-            <Box maxH={{ base: '360px', md: '480px' }} overflowY="auto" pr={1}>
-              <Stack spacing={3}>
-                <TicketCard
-                  title="연장권"
-                  description="현재 사물함을 15일 연장합니다."
-                  count={getCount('EXTENSION')}
-                  buttonLabel="연장하기"
-                  onClick={() => handleUseTicket('EXTENSION')}
-                  isLoading={extendMutation.isPending}
-                  isDisabled={!hasLocker}
-                  bg={itemBg}
-                  textMuted={textMuted}
-                  borderColor={borderColor}
+            <Stack spacing={3}>
+              <TicketCard
+                title="연장권"
+                description="현재 사물함을 15일 연장합니다."
+                count={getCount('EXTENSION')}
+                buttonLabel="연장하기"
+                onClick={() => handleUseTicket('EXTENSION')}
+                isLoading={extendMutation.isPending}
+                isDisabled={!hasLocker}
+                bg={itemBg}
+                textMuted={textMuted}
+                borderColor={borderColor}
+              />
+              <TicketCard
+                title="이사권"
+                description="다른 번호로 이동할 수 있습니다."
+                count={getCount('SWAP')}
+                buttonLabel="이동하기"
+                onClick={() => handleUseTicket('SWAP')}
+                isDisabled={!hasLocker}
+                bg={itemBg}
+                textMuted={textMuted}
+                borderColor={borderColor}
+              />
+              <TicketCard
+                title="패널티 감면권"
+                description="패널티 일수를 1회 면제합니다."
+                count={getCount('PENALTY_EXEMPTION')}
+                buttonLabel="감면하기"
+                onClick={() => handleUseTicket('PENALTY_EXEMPTION')}
+                isLoading={penaltyMutation.isPending}
+                bg={itemBg}
+                textMuted={textMuted}
+                borderColor={borderColor}
+              />
+              <TicketCard
+                title="대여권"
+                description="출석/미션 보상으로만 사용할 수 있습니다."
+                count={getCount('LENT')}
+                buttonLabel="관리자 지급"
+                onClick={() => {}}
+                isDisabled
+                bg={itemBg}
+                textMuted={textMuted}
+                borderColor={borderColor}
+              />
+            </Stack>
+
+            <Divider my={4} />
+
+            {historyTab === 'coin' ? (
+              coinHistories.length === 0 ? (
+                <EmptyState
+                  title="수박씨 내역이 없습니다"
+                  description="출석 보상이나 아이템 사용 내역이 아직 없습니다."
                 />
-                <TicketCard
-                  title="이사권"
-                  description="다른 번호로 이동할 수 있습니다."
-                  count={getCount('SWAP')}
-                  buttonLabel="이동하기"
-                  onClick={() => handleUseTicket('SWAP')}
-                  isDisabled={!hasLocker}
-                  bg={itemBg}
-                  textMuted={textMuted}
-                  borderColor={borderColor}
-                />
-                <TicketCard
-                  title="패널티 감면권"
-                  description="패널티 일수를 1회 면제합니다."
-                  count={getCount('PENALTY_EXEMPTION')}
-                  buttonLabel="감면하기"
-                  onClick={() => handleUseTicket('PENALTY_EXEMPTION')}
-                  isLoading={penaltyMutation.isPending}
-                  bg={itemBg}
-                  textMuted={textMuted}
-                  borderColor={borderColor}
-                />
-                <TicketCard
-                  title="대여권"
-                  description="출석/미션 보상으로만 사용할 수 있습니다."
-                  count={getCount('LENT')}
-                  buttonLabel="관리자 지급"
-                  onClick={() => {}}
-                  isDisabled
-                  bg={itemBg}
-                  textMuted={textMuted}
-                  borderColor={borderColor}
-                />
-              </Stack>
-            </Box>
+              ) : (
+                <Box maxH={{ base: '320px', md: '360px' }} overflowY="auto" pr={1}>
+                  <Stack spacing={3}>
+                    {coinHistories.map((history, index) => (
+                      <Box
+                        key={`${history.date}-${history.type}-${index}`}
+                        borderRadius="md"
+                        bg={itemBg}
+                        px={4}
+                        py={3}
+                      >
+                        <HStack justify="space-between" align="center">
+                          <Stack spacing={1}>
+                            <Text fontWeight="semibold">
+                              {history.reason ?? '수박씨 변동'}
+                            </Text>
+                            <Text fontSize="sm" color={textMuted}>
+                              {formatDate(history.date)}
+                            </Text>
+                          </Stack>
+                          <Text
+                            fontWeight="bold"
+                            color={history.type === 'EARN' ? earnColor : spendColor}
+                          >
+                            {history.amount > 0 ? '+' : ''}
+                            {history.amount.toLocaleString()} 수박씨
+                          </Text>
+                        </HStack>
+                      </Box>
+                    ))}
+                  </Stack>
+                </Box>
+              )
+            ) : usedItemHistories.length === 0 ? (
+              <EmptyState
+                title="사용한 아이템 내역이 없습니다"
+                description="아이템 사용 기록이 아직 없습니다."
+              />
+            ) : (
+              <Box maxH={{ base: '320px', md: '360px' }} overflowY="auto" pr={1}>
+                <Stack spacing={3}>
+                  {usedItemHistories.map((history, index) => {
+                    const label =
+                      itemTypeLabels[history.itemType as UserItemType] ??
+                      history.itemName ??
+                      '아이템'
+                    return (
+                      <Box
+                        key={`${history.date}-${history.itemType}-${index}`}
+                        borderRadius="md"
+                        bg={itemBg}
+                        px={4}
+                        py={3}
+                      >
+                        <HStack justify="space-between" align="center">
+                          <Stack spacing={1}>
+                            <Text fontWeight="semibold">{label}</Text>
+                            <Text fontSize="sm" color={textMuted}>
+                              {formatDate(history.date)}
+                            </Text>
+                          </Stack>
+                          <Stack spacing={1} textAlign="right">
+                            <Text fontWeight="bold">사용됨</Text>
+                            {history.usedAt && (
+                              <Text fontSize="sm" color={textMuted}>
+                                사용일시: {formatDate(history.usedAt)}
+                              </Text>
+                            )}
+                          </Stack>
+                        </HStack>
+                      </Box>
+                    )
+                  })}
+                </Stack>
+              </Box>
+            )}
           </Stack>
           <Divider my={6} />
           <Button as={RouterLink} to="/store" colorScheme="brand" variant="solid">
             스토어 바로가기
           </Button>
-        </Box>
-      </Stack>
-
-      <Box borderRadius="xl" bg={cardBg} p={6} shadow="md" borderWidth={1} borderColor={borderColor}>
-        <Stack spacing={4}>
-          <Text fontSize="lg" fontWeight="bold">
-            재화 내역
-          </Text>
-
-          {historyTab === 'coin' ? (
-            coinHistories.length === 0 ? (
-              <EmptyState
-                title="수박씨 내역이 없습니다"
-                description="출석 보상이나 아이템 사용 내역이 아직 없습니다."
-              />
-            ) : (
-              <Stack spacing={3}>
-                {coinHistories.map((history, index) => (
-                  <Box
-                    key={`${history.date}-${history.type}-${index}`}
-                    borderRadius="md"
-                    bg={itemBg}
-                    px={4}
-                    py={3}
-                  >
-                    <HStack justify="space-between" align="center">
-                      <Stack spacing={1}>
-                        <Text fontWeight="semibold">
-                          {history.reason ?? '수박씨 변동'}
-                        </Text>
-                        <Text fontSize="sm" color={textMuted}>
-                          {formatDate(history.date)}
-                        </Text>
-                      </Stack>
-                      <Text
-                        fontWeight="bold"
-                        color={history.type === 'EARN' ? earnColor : spendColor}
-                      >
-                        {history.amount > 0 ? '+' : ''}
-                        {history.amount.toLocaleString()} 수박씨
-                      </Text>
-                    </HStack>
-                  </Box>
-                ))}
-              </Stack>
-            )
-          ) : usedItemHistories.length === 0 ? (
-            <EmptyState
-              title="사용한 아이템 내역이 없습니다"
-              description="아이템 사용 기록이 아직 없습니다."
-            />
-          ) : (
-            <Stack spacing={3}>
-              {usedItemHistories.map((history, index) => {
-                const label =
-                  itemTypeLabels[history.itemType as UserItemType] ??
-                  history.itemName ??
-                  '아이템'
-                return (
-                  <Box
-                    key={`${history.date}-${history.itemType}-${index}`}
-                    borderRadius="md"
-                    bg={itemBg}
-                    px={4}
-                    py={3}
-                  >
-                    <HStack justify="space-between" align="center">
-                      <Stack spacing={1}>
-                        <Text fontWeight="semibold">{label}</Text>
-                        <Text fontSize="sm" color={textMuted}>
-                          {formatDate(history.date)}
-                        </Text>
-                      </Stack>
-                      <Stack spacing={1} textAlign="right">
-                        <Text fontWeight="bold">사용됨</Text>
-                        {history.usedAt && (
-                          <Text fontSize="sm" color={textMuted}>
-                            사용일시: {formatDate(history.usedAt)}
-                          </Text>
-                        )}
-                      </Stack>
-                    </HStack>
-                  </Box>
-                )
-              })}
-            </Stack>
-          )}
         </Stack>
       </Box>
 
