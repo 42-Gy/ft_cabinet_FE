@@ -32,8 +32,7 @@ export const useAttendanceMutation = () => {
   return useMutation<string>({
     mutationFn: postAttendance,
     onSuccess: (message) => {
-      const description = message ? message.replace(/코인/g, '수박씨') : '수박씨가 지급되었습니다.'
-      toast({ description, status: 'success' })
+      toast({ description: message, status: 'success' })
       queryClient.invalidateQueries({ queryKey: attendanceKeys.root })
       queryClient.invalidateQueries({ queryKey: meQueryKeys.root })
     },

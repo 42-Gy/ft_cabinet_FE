@@ -189,12 +189,19 @@ export const LockersPage = () => {
 
   useEffect(() => {
     if (!sectionsForFloor.length) {
-      setActiveSectionId(null)
+      if (activeSectionId !== null) {
+        setActiveSectionId(null)
+      }
+      setSectionPageIndex(0)
       return
     }
-    if (!activeSectionId || !sectionsForFloor.some((section) => section.id === activeSectionId)) {
-      setActiveSectionId(sectionsForFloor[0].id)
+    if (activeSectionId && sectionsForFloor.some((section) => section.id === activeSectionId)) {
+      return
     }
+    if (activeSectionId !== null) {
+      setActiveSectionId(null)
+    }
+    setSectionPageIndex(0)
   }, [sectionsForFloor, activeSectionId])
 
   const currentSection = useMemo(

@@ -71,7 +71,7 @@ export const HomeOverview = ({
   const highlightBorder = useColorModeValue('gray.100', 'whiteAlpha.200')
   const sectionText = useColorModeValue('gray.600', 'gray.300')
   const guideIconColor = useColorModeValue('leaf.500', 'leaf.300')
-  const guideBorderWidth = useColorModeValue(1, 0)
+  const guideBorderWidth = useColorModeValue(0, 0)
   const guideBorderColor = useColorModeValue('gray.100', 'transparent')
   const guideGradients = {
     rent: useColorModeValue('linear(to-b, #e0f7ff, #f5fbff)', 'linear(to-b, gray.800, gray.700)'),
