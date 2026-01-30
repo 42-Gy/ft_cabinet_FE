@@ -34,6 +34,12 @@ const parseErrorMessage = (error: unknown) => {
   return defaultErrorMessage
 }
 
+const resolveSuccessMessage = (message: string | null | undefined, fallback: string) => {
+  if (!message) return fallback
+  if (/success/i.test(message)) return fallback
+  return message
+}
+
 const cabinetKeys = {
   root: ['cabinets'] as const,
   list: (floor: number | string) => ['cabinets', 'list', floor] as const,
@@ -144,7 +150,10 @@ export const useRentCabinetMutation = () => {
       return result
     },
     onSuccess: (result) => {
-      toast({ description: result.message ?? '대여가 완료되었습니다.', status: 'success' })
+      toast({
+        description: resolveSuccessMessage(result.message, '대여가 완료되었습니다.'),
+        status: 'success',
+      })
       invalidate()
     },
     onError: (error) => {
@@ -162,7 +171,10 @@ export const useReturnCabinetMutation = () => {
       return returnCabinet(payload)
     },
     onSuccess: (result) => {
-      toast({ description: result.message ?? '사물함 반납이 완료되었습니다.', status: 'success' })
+      toast({
+        description: resolveSuccessMessage(result.message, '사물함 반납이 완료되었습니다.'),
+        status: 'success',
+      })
       invalidate()
     },
     onError: (error) => {
@@ -176,7 +188,10 @@ export const useCheckReturnImageMutation = () => {
   return useMutation<LockerActionResult, unknown, File>({
     mutationFn: async (file: File) => checkReturnImage(file),
     onSuccess: (result) => {
-      toast({ description: result.message ?? '이미지 검증이 완료되었습니다.', status: 'success' })
+      toast({
+        description: resolveSuccessMessage(result.message, '이미지 검증이 완료되었습니다.'),
+        status: 'success',
+      })
     },
     onError: (error) => {
       toast({ description: parseErrorMessage(error), status: 'error' })
@@ -193,7 +208,10 @@ export const useBuyItemMutation = () => {
       return buyStoreItem(itemId)
     },
     onSuccess: (result) => {
-      toast({ description: result.message ?? '아이템 구매가 완료되었습니다.', status: 'success' })
+      toast({
+        description: resolveSuccessMessage(result.message, '아이템 구매가 완료되었습니다.'),
+        status: 'success',
+      })
       invalidate()
     },
     onError: (error) => {
@@ -214,7 +232,10 @@ export const useReserveCabinetMutation = () => {
   return useMutation<LockerActionResult, unknown, number>({
     mutationFn: async (visibleNum) => reserveCabinet(visibleNum),
     onSuccess: (result) => {
-      toast({ description: result.message ?? '사물함 예약이 완료되었습니다.', status: 'success' })
+      toast({
+        description: resolveSuccessMessage(result.message, '이사 예약이 되었습니다.'),
+        status: 'success',
+      })
     },
     onError: (error) => {
       toast({ description: parseErrorMessage(error), status: 'error' })
@@ -231,7 +252,10 @@ export const useExtendTicketMutation = () => {
       return useExtensionTicket()
     },
     onSuccess: (result) => {
-      toast({ description: result.message ?? '연장권을 사용했습니다.', status: 'success' })
+      toast({
+        description: resolveSuccessMessage(result.message, '연장권을 사용했습니다.'),
+        status: 'success',
+      })
       invalidate()
     },
     onError: (error) => toast({ description: parseErrorMessage(error), status: 'error' }),
@@ -245,7 +269,10 @@ export const useSwapCabinetMutation = () => {
   return useMutation<LockerActionResult, unknown, SwapCabinetPayload>({
     mutationFn: async (payload) => swapCabinet(payload),
     onSuccess: (result) => {
-      toast({ description: result.message ?? '이사권을 사용했습니다.', status: 'success' })
+      toast({
+        description: resolveSuccessMessage(result.message, '이사 완료되었습니다.'),
+        status: 'success',
+      })
       invalidate()
     },
     onError: (error) => toast({ description: parseErrorMessage(error), status: 'error' }),
@@ -261,7 +288,10 @@ export const usePenaltyTicketMutation = () => {
       return usePenaltyTicket()
     },
     onSuccess: (result) => {
-      toast({ description: result.message ?? '감면권을 사용했습니다.', status: 'success' })
+      toast({
+        description: resolveSuccessMessage(result.message, '감면권을 사용했습니다.'),
+        status: 'success',
+      })
       invalidate()
     },
     onError: (error) => toast({ description: parseErrorMessage(error), status: 'error' }),
@@ -275,7 +305,10 @@ export const useRenewTicketMutation = () => {
   return useMutation<LockerActionResult>({
     mutationFn: renewLentCabinet,
     onSuccess: (result) => {
-      toast({ description: result.message ?? '대여권 연장이 완료되었습니다.', status: 'success' })
+      toast({
+        description: resolveSuccessMessage(result.message, '대여권 연장이 완료되었습니다.'),
+        status: 'success',
+      })
       invalidate()
     },
     onError: (error) => {
@@ -293,7 +326,10 @@ export const useAutoExtensionMutation = () => {
       return updateAutoExtension(enabled)
     },
     onSuccess: (result) => {
-      toast({ description: result.message ?? '자동 연장 설정이 변경되었습니다.', status: 'success' })
+      toast({
+        description: resolveSuccessMessage(result.message, '자동 연장 설정이 변경되었습니다.'),
+        status: 'success',
+      })
       invalidate()
     },
     onError: (error) => toast({ description: parseErrorMessage(error), status: 'error' }),
