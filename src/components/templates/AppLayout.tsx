@@ -130,11 +130,8 @@ export const AppLayout = () => {
             {renderLinks('row')}
             <Button
               size="sm"
-              bg={colorMode === 'light' ? 'brand.500' : 'blue.600'}
-              color="white"
-              _hover={{ bg: colorMode === 'light' ? 'brand.400' : 'blue.500' }}
-              _active={{ bg: colorMode === 'light' ? 'brand.600' : 'blue.700' }}
-              variant={isLoggedIn ? 'outline' : 'solid'}
+              colorScheme="brand"
+              variant={isLoggedIn ? 'outline' : 'primary'}
               onClick={isLoggedIn ? logout : handleLogin}
             >
               {isLoggedIn ? '로그아웃' : '로그인'}
@@ -171,11 +168,8 @@ export const AppLayout = () => {
             <Button
               mt={4}
               w="full"
-              bg={colorMode === 'light' ? 'brand.500' : 'blue.600'}
-              color="white"
-              _hover={{ bg: colorMode === 'light' ? 'brand.400' : 'blue.500' }}
-              _active={{ bg: colorMode === 'light' ? 'brand.600' : 'blue.700' }}
-              variant={isLoggedIn ? 'outline' : 'solid'}
+              colorScheme="brand"
+              variant={isLoggedIn ? 'outline' : 'primary'}
               onClick={() => {
                 onClose()
                 if (isLoggedIn) logout()

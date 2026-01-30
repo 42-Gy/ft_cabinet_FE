@@ -504,22 +504,26 @@ export const MyLockersPage = () => {
               <Text fontSize="2xl" fontWeight="bold">
                 #{me.visibleNum} · {me.section}
               </Text>
-              {me.lentStartedAt && (
-                <Text fontSize="sm" color={textMuted}>
-                  대여 시작: {formatDate(me.lentStartedAt)}
-                </Text>
-              )}
               {(() => {
                 const expiresAt = me.expiredAt ?? me.lentExpiredAt ?? null
-                if (!expiresAt) return null
+                if (!me.lentStartedAt && !expiresAt) return null
                 return (
                   <Stack spacing={1}>
-                    <Text fontSize="sm" color={textMuted}>
-                      만료 예정: {formatDate(expiresAt)}
-                    </Text>
-                    <Text fontSize="sm" color={textMuted}>
-                      만료까지: {formatRemainingTime(expiresAt)}
-                    </Text>
+                    {me.lentStartedAt && (
+                      <Text fontSize="sm" color={textMuted}>
+                        대여 시작: {formatDate(me.lentStartedAt)}
+                      </Text>
+                    )}
+                    {expiresAt && (
+                      <>
+                        <Text fontSize="sm" color={textMuted}>
+                          만료 예정: {formatDate(expiresAt)}
+                        </Text>
+                        <Text fontSize="sm" fontWeight="semibold" color="brand.500">
+                          만료까지: {formatRemainingTime(expiresAt)}
+                        </Text>
+                      </>
+                    )}
                   </Stack>
                 )
               })()}
