@@ -144,7 +144,7 @@ export const useRentCabinetMutation = () => {
       return result
     },
     onSuccess: (result) => {
-      toast({ description: result.message ?? '사물함 대여가 완료되었습니다.', status: 'success' })
+      toast({ description: result.message ?? '대여가 완료되었습니다.', status: 'success' })
       invalidate()
     },
     onError: (error) => {

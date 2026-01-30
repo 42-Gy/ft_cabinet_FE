@@ -42,7 +42,7 @@ export const UsageSummary = ({
         실시간 현황
       </Text>
       <Text fontSize="3xl" fontWeight="bold" mt={2}>
-        {total}개 락커
+        {total}개 사물함
       </Text>
       <SimpleGrid columns={{ base: 1, sm: 3 }} spacing={3} mt={4}>
         {summaryItems.map((item) => (

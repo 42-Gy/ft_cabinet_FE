@@ -33,7 +33,7 @@ import {
   Wrap,
   WrapItem,
 } from '@chakra-ui/react'
-import { MdChevronLeft, MdChevronRight } from 'react-icons/md'
+import { MdArrowBack, MdChevronLeft, MdChevronRight } from 'react-icons/md'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { PageHeader } from '@/components/molecules/PageHeader'
 import { LoadingState } from '@/components/molecules/LoadingState'
@@ -52,6 +52,7 @@ import { useMeQuery } from '@/features/users/hooks/useMeQuery'
 import { FloorSectionMap } from '@/features/lockers/components/FloorSectionMap'
 import { extractSectionId, getSectionsByFloor, lockerFloors } from '@/features/lockers/data/cabinetSections'
 import type { Cabinet, CabinetStatus, LockerSectionMeta } from '@/types/locker'
+import { formatDate } from '@/utils/date'
 
 type LockerCardPalette = {
   bg: string
@@ -623,12 +624,12 @@ export const LockersPage = () => {
             </Text>
             {detail.lentStartedAt && (
               <Text fontSize="sm" color={mutedText}>
-                시작: {detail.lentStartedAt}
+                시작: {formatDate(detail.lentStartedAt)}
               </Text>
             )}
             {detail.lentExpiredAt && (
               <Text fontSize="sm" color={mutedText}>
-                만료 예정: {detail.lentExpiredAt}
+                만료 예정: {formatDate(detail.lentExpiredAt)}
               </Text>
             )}
           </Stack>
@@ -640,7 +641,7 @@ export const LockersPage = () => {
             </Text>
             {detail.previousEndedAt && (
               <Text fontSize="sm" color={mutedText}>
-                반납일: {detail.previousEndedAt}
+                반납일: {formatDate(detail.previousEndedAt)}
               </Text>
             )}
           </Stack>
@@ -706,7 +707,7 @@ export const LockersPage = () => {
       <Stack spacing={6}>
         <PageHeader
           title="섹션별 사물함"
-          description="SUBAK의 수박 지도에서 위치를 선택하고, 상세 화면에서 실시간 상태를 확인한 뒤 대여하세요."
+          description="지도에서 위치를 선택하고, 상세 화면에서 실시간 상태를 확인한 뒤 대여하세요."
         />
 
         {!isLoggedIn && (
@@ -766,8 +767,13 @@ export const LockersPage = () => {
             bg={cardBg}
             shadow="sm"
           >
-            <Button variant="ghost" alignSelf="flex-start" onClick={() => setViewMode('map')}>
-              ← 지도 보기
+            <Button
+              variant="ghost"
+              alignSelf="flex-start"
+              leftIcon={<MdArrowBack />}
+              onClick={() => setViewMode('map')}
+            >
+              지도 보기
             </Button>
 
             {cabinetsQuery.isLoading ? (
@@ -787,7 +793,6 @@ export const LockersPage = () => {
                   <Text fontSize="xl" fontWeight="bold">
                     {currentSection.title}
                   </Text>
-                  <Text color={mutedText}>{currentSection.description}</Text>
                 </Box>
 
                 <Stack spacing={2} align="center">
@@ -906,46 +911,7 @@ export const LockersPage = () => {
 
                 <Divider />
 
-                {selectedCabinet ? (
-                  <Stack spacing={2}>
-                    <Text fontWeight="bold">
-                      선택한 사물함 #{selectedCabinet.visibleNum}{' '}
-                      {selectedCabinet.section && `· ${selectedCabinet.section}`}
-                    </Text>
-                    <Text fontSize="sm" color={mutedText}>
-                      상태:{' '}
-                      {resolvedStatusMeta.label}
-                    </Text>
-                    <HStack spacing={3} flexWrap="wrap">
-                      {!hasLocker && (
-                        <Button
-                          mt={2}
-                          colorScheme="brand"
-                          isDisabled={!canRentSelected}
-                          isLoading={
-                            rentMutation.isPending && rentMutation.variables === selectedCabinet.visibleNum
-                          }
-                          onClick={handleRentSelectedCabinet}
-                        >
-                          {isLoggedIn ? '이 사물함 대여하기' : '로그인 후 대여 가능'}
-                        </Button>
-                      )}
-                      {hasLocker && (
-                        <Button
-                          mt={2}
-                          variant="outline"
-                          colorScheme="brand"
-                          isDisabled={!canSwapSelected}
-                          onClick={handleSwapStart}
-                        >
-                          이사하기
-                        </Button>
-                      )}
-                    </HStack>
-                  </Stack>
-                ) : (
-                  <EmptyState title="선택한 사물함이 없습니다" description="사물함을 선택해 주세요." />
-                )}
+                <EmptyState title="사물함을 선택해 주세요." description="선택한 사물함의 상세는 오른쪽 패널에서 확인합니다." />
               </>
             )}
           </Stack>
@@ -966,8 +932,8 @@ export const LockersPage = () => {
                   이사는 취소할 수 없으며, 반납 절차를 반드시 완료해야 합니다.
                 </Text>
                 <Text fontSize="sm" color={mutedText}>
-                  이사하기를 누르면 선택한 사물함이 15분 동안 예약되며, 그동안 다른 사용자는
-                  대여할 수 없습니다.
+                  이사하기를 누르면 선택한 사물함이 15분 동안 예약되며, 그 시간 동안 다른 사용자는
+                  사용할 수 없습니다.
                 </Text>
                 {swapTarget && (
                   <Box borderWidth={1} borderColor={borderColor} borderRadius="lg" p={4} bg={cardBg}>
@@ -1177,8 +1143,18 @@ interface LegendItemProps {
 
 const LegendItem = ({ color, label }: LegendItemProps) => (
   <HStack spacing={2}>
-    <Box w="14px" h="14px" borderRadius="full" bg={color} borderWidth="1px" borderColor="blackAlpha.200" />
-    <Text fontSize="sm">{label}</Text>
+    <Box
+      w="14px"
+      h="14px"
+      borderRadius="full"
+      bg={color}
+      borderWidth="1px"
+      borderColor={color}
+      boxShadow="inset 0 0 0 1px rgba(255,255,255,0.25)"
+    />
+    <Text fontSize="sm" color={color}>
+      {label}
+    </Text>
   </HStack>
 )
 
