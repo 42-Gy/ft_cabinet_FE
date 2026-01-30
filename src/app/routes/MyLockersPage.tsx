@@ -116,7 +116,8 @@ export const MyLockersPage = () => {
       const [, month, day, hour, minute] = koreanMatch
       return `${pad2(month)}월 ${pad2(day)}일 ${pad2(hour)}시 ${pad2(minute)}분`
     }
-    const isoMatch = value.match(
+    const normalized = value.replace(/\.(\d{3})\d+/, '.$1')
+    const isoMatch = normalized.match(
       /^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?$/,
     )
     if (isoMatch) {
@@ -133,7 +134,7 @@ export const MyLockersPage = () => {
         parsed.getHours(),
       )}시 ${pad2(parsed.getMinutes())}분`
     }
-    const parsed = new Date(value)
+    const parsed = new Date(normalized)
     if (Number.isNaN(parsed.getTime())) {
       return value
     }
@@ -614,7 +615,7 @@ export const MyLockersPage = () => {
                     return (
                       <TicketCard
                         title="연장권"
-                        description="현재 사물함을 15일 연장합니다."
+                        description="대여 기간을 3일 연장합니다. (최대 보유 5개/월 구매 5회)"
                         count={count}
                         buttonLabel={useStore ? '스토어 가서 구매하기' : '연장하기'}
                         onClick={useStore ? () => navigate('/store') : () => handleUseTicket('EXTENSION')}
@@ -633,7 +634,7 @@ export const MyLockersPage = () => {
                     return (
                       <TicketCard
                         title="이사권"
-                        description="다른 번호로 이동할 수 있습니다."
+                        description="현재 반납일 그대로 다른 사물함으로 이동합니다."
                         count={count}
                         buttonLabel={useStore ? '스토어 가서 구매하기' : '이동하기'}
                         onClick={useStore ? () => navigate('/store') : () => handleUseTicket('SWAP')}
@@ -651,7 +652,7 @@ export const MyLockersPage = () => {
                     return (
                       <TicketCard
                         title="패널티 감면권"
-                        description="패널티 일수를 1회 면제합니다."
+                        description="패널티 기간을 1일 줄여줍니다."
                         count={count}
                         buttonLabel={useStore ? '스토어 가서 구매하기' : '감면하기'}
                         onClick={
@@ -668,7 +669,7 @@ export const MyLockersPage = () => {
                   })()}
                   <TicketCard
                     title="대여권"
-                    description="출석/미션 보상으로만 사용할 수 있습니다."
+                    description="사물함을 31일간 대여할 수 있습니다."
                     count={getCount('LENT')}
                     buttonLabel="관리자 지급"
                     onClick={() => {}}

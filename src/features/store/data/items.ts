@@ -30,8 +30,8 @@ export const STORE_ITEMS: StoreItem[] = [
   {
     key: 'RENT',
     title: '대여권',
-    description: '출석/미션 보상 전용. 스토어에서 구매할 수 없습니다.',
-    priceLabel: '구매 불가',
+    description: '사물함을 31일간 대여할 수 있습니다.',
+    priceLabel: '0 수박씨',
     itemId: STORE_ITEM_IDS.RENT,
     icon: RiTicket2Line,
     disabled: true,
@@ -39,15 +39,15 @@ export const STORE_ITEMS: StoreItem[] = [
   {
     key: 'EXTEND',
     title: '연장권',
-    description: '현재 사물함을 15일 연장합니다.',
-    priceLabel: '1,000 수박씨',
+    description: '대여 기간을 3일 연장합니다. (최대 보유 5개/월 구매 5회)',
+    priceLabel: '400 수박씨',
     itemId: STORE_ITEM_IDS.EXTEND,
     icon: RiTimerLine,
   },
   {
     key: 'MOVE',
     title: '이사권',
-    description: '다른 섹션/번호로 이동하고 싶을 때 사용하세요.',
+    description: '현재 반납일 그대로 다른 사물함으로 이동합니다.',
     priceLabel: '1,000 수박씨',
     itemId: STORE_ITEM_IDS.MOVE,
     icon: RiExchangeLine,
@@ -55,7 +55,7 @@ export const STORE_ITEMS: StoreItem[] = [
   {
     key: 'PENALTY_REDUCE',
     title: '패널티 감면권',
-    description: '패널티/연체 일수를 한 번 줄여줍니다.',
+    description: '패널티 기간을 1일 줄여줍니다.',
     priceLabel: '600 수박씨',
     itemId: STORE_ITEM_IDS.PENALTY_REDUCE,
     icon: RiShieldCheckLine,
