@@ -62,18 +62,6 @@ type LockerCardPalette = {
   borderWidth?: number
 }
 
-const statusBadgeMeta: Record<
-  CabinetStatus,
-  { color: string; label: string; description?: string }
-> = {
-  AVAILABLE: { color: 'green', label: '대여 가능', description: '바로 사용할 수 있어요.' },
-  FULL: { color: 'orange', label: '사용 중', description: '다른 이용자가 사용 중입니다.' },
-  BROKEN: { color: 'red', label: '점검 중', description: '점검 후 다시 열립니다.' },
-  OVERDUE: { color: 'purple', label: '연체', description: '연체 상태입니다.' },
-  DISABLED: { color: 'gray', label: '비활성', description: '현재 대여가 중지되었습니다.' },
-  PENDING: { color: 'yellow', label: '승인 대기', description: '반납 승인 대기 중입니다.' },
-}
-
 export const LockersPage = () => {
   const { data: me } = useMeQuery()
   const isLoggedIn = Boolean(me)
@@ -348,9 +336,6 @@ export const LockersPage = () => {
 
   const effectiveSelectedStatus = selectedCabinet ? getEffectiveStatus(selectedCabinet) : null
 
-  const canRentSelected = Boolean(
-    selectedCabinet && isLoggedIn && !hasLocker && effectiveSelectedStatus === 'AVAILABLE',
-  )
   const canSwapSelected = Boolean(
     selectedCabinet &&
       isLoggedIn &&
