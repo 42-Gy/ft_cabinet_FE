@@ -35,6 +35,20 @@ const colors = {
 export const theme = extendTheme({
   config,
   colors,
+  semanticTokens: {
+    colors: {
+      'brand.50': { default: 'brand.50', _dark: 'blue.50' },
+      'brand.100': { default: 'brand.100', _dark: 'blue.100' },
+      'brand.200': { default: 'brand.200', _dark: 'blue.200' },
+      'brand.300': { default: 'brand.300', _dark: 'blue.300' },
+      'brand.400': { default: 'brand.400', _dark: 'blue.400' },
+      'brand.500': { default: 'brand.500', _dark: 'blue.500' },
+      'brand.600': { default: 'brand.600', _dark: 'blue.600' },
+      'brand.700': { default: 'brand.700', _dark: 'blue.700' },
+      'brand.800': { default: 'brand.800', _dark: 'blue.800' },
+      'brand.900': { default: 'brand.900', _dark: 'blue.900' },
+    },
+  },
   styles: {
     global: (props: StyleFunctionProps) => ({
       body: {

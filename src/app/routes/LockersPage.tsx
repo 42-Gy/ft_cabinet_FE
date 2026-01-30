@@ -112,28 +112,28 @@ export const LockersPage = () => {
   const myLockerMuted = useColorModeValue('brand.700', 'brand.100')
 
   const availablePalette: LockerCardPalette = {
-    bg: useColorModeValue('green.500', 'green.600'),
-    border: useColorModeValue('green.500', 'green.400'),
-    color: useColorModeValue('white', 'white'),
-    muted: useColorModeValue('green.100', 'green.100'),
+    bg: useColorModeValue('green.50', 'green.900'),
+    border: useColorModeValue('green.200', 'green.500'),
+    color: useColorModeValue('green.900', 'green.100'),
+    muted: useColorModeValue('green.700', 'green.200'),
   }
   const fullPalette: LockerCardPalette = {
-    bg: useColorModeValue('red.500', 'red.600'),
-    border: useColorModeValue('red.500', 'red.400'),
-    color: useColorModeValue('white', 'white'),
-    muted: useColorModeValue('red.100', 'red.100'),
+    bg: useColorModeValue('orange.50', 'orange.900'),
+    border: useColorModeValue('orange.200', 'orange.500'),
+    color: useColorModeValue('orange.900', 'orange.100'),
+    muted: useColorModeValue('orange.700', 'orange.200'),
   }
   const overduePalette: LockerCardPalette = {
-    bg: useColorModeValue('red.500', 'red.600'),
-    border: useColorModeValue('red.500', 'red.400'),
-    color: useColorModeValue('white', 'white'),
-    muted: useColorModeValue('red.100', 'red.100'),
+    bg: useColorModeValue('red.50', 'red.900'),
+    border: useColorModeValue('red.200', 'red.500'),
+    color: useColorModeValue('red.900', 'red.100'),
+    muted: useColorModeValue('red.700', 'red.200'),
   }
   const brokenPalette: LockerCardPalette = {
-    bg: useColorModeValue('gray.500', 'gray.600'),
-    border: useColorModeValue('gray.500', 'gray.400'),
-    color: useColorModeValue('white', 'white'),
-    muted: useColorModeValue('gray.100', 'gray.100'),
+    bg: useColorModeValue('gray.100', 'gray.800'),
+    border: useColorModeValue('gray.300', 'gray.600'),
+    color: useColorModeValue('gray.700', 'gray.100'),
+    muted: useColorModeValue('gray.600', 'gray.300'),
   }
   const selectedPalette: LockerCardPalette = {
     bg: useColorModeValue('blue.100', 'blue.800'),
@@ -165,10 +165,10 @@ export const LockersPage = () => {
     PENDING: brokenPalette,
   }
 
-  const legendAvailable = useColorModeValue('green.500', 'green.300')
-  const legendInUse = useColorModeValue('red.500', 'red.300')
+  const legendAvailable = useColorModeValue('green.400', 'green.200')
+  const legendInUse = useColorModeValue('red.400', 'red.200')
   const legendUnavailable = useColorModeValue('gray.500', 'gray.300')
-  const legendSelected = useColorModeValue('blue.500', 'blue.300')
+  const legendSelected = useColorModeValue('blue.500', 'blue.200')
   const indicatorInactive = useColorModeValue('gray.300', 'whiteAlpha.400')
 
   const sectionsForFloor: LockerSectionMeta[] = useMemo(
@@ -248,8 +248,7 @@ export const LockersPage = () => {
       (cabinet) => cabinet.cabinetId === selectedCabinetId,
     )
     if (!currentSelected) {
-      const nextAvailable = cabinetsForSection.find((cabinet) => cabinet.status === 'AVAILABLE')
-      setSelectedCabinetId(nextAvailable ? nextAvailable.cabinetId : cabinetsForSection[0]?.cabinetId ?? null)
+      setSelectedCabinetId(null)
     }
   }, [cabinetsForSection, currentSection, selectedCabinetId])
 
@@ -257,9 +256,7 @@ export const LockersPage = () => {
     if (!displayCabinets.length) return
     const inCurrentView = displayCabinets.some((cabinet) => cabinet.cabinetId === selectedCabinetId)
     if (!inCurrentView) {
-      const nextAvailable =
-        displayCabinets.find((cabinet) => cabinet.status === 'AVAILABLE') ?? displayCabinets[0]
-      setSelectedCabinetId(nextAvailable?.cabinetId ?? null)
+      setSelectedCabinetId(null)
     }
   }, [displayCabinets, selectedCabinetId])
 
