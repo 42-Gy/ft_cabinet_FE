@@ -359,11 +359,6 @@ export const LockersPage = () => {
       effectiveSelectedStatus === 'AVAILABLE' &&
       selectedCabinet.visibleNum !== me?.visibleNum,
   )
-  const resolvedStatusMeta =
-    statusBadgeMeta[
-      (effectiveSelectedStatus ?? selectedCabinet?.status) as CabinetStatus
-    ] ?? statusBadgeMeta.BROKEN
-
   const handleSectionSelect = (section: LockerSectionMeta) => {
     setActiveFloor(section.floor)
     setActiveSectionId(section.id)
@@ -385,13 +380,6 @@ export const LockersPage = () => {
       ...prev,
       [visibleNum]: 'FULL',
     }))
-  }
-
-  const handleRentSelectedCabinet = () => {
-    if (!selectedCabinet || !canRentSelected) return
-    rentMutation.mutate(selectedCabinet.visibleNum, {
-      onSuccess: () => markCabinetRented(selectedCabinet.visibleNum),
-    })
   }
 
   const handleSwapModalClose = () => {
