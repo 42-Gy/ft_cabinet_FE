@@ -75,6 +75,7 @@ export const MyLockersPage = () => {
   const itemBg = useColorModeValue('gray.50', 'gray.700')
   const earnColor = useColorModeValue('leaf.600', 'leaf.300')
   const spendColor = useColorModeValue('red.500', 'red.300')
+  const itemPanelHeight = { base: '720px', md: '640px' }
   const itemTypeLabels: Record<UserItemType, string> = {
     EXTENSION: '연장권',
     SWAP: '이사권',
@@ -544,9 +545,9 @@ export const MyLockersPage = () => {
                 </Button>
               </HStack>
             </HStack>
-            <Box minH={{ base: '600px', md: '600px' }}>
+            <Box minH={itemPanelHeight} h={itemPanelHeight}>
               {historyTab === 'items' ? (
-                <Stack spacing={3}>
+                <Stack spacing={3} h="full">
                   {(() => {
                     const count = getCount('EXTENSION')
                     const useStore = count === 0
@@ -619,12 +620,14 @@ export const MyLockersPage = () => {
                 </Stack>
               ) : historyTab === 'coin' ? (
                 coinHistories.length === 0 ? (
-                  <EmptyState
-                    title="수박씨 내역이 없습니다"
-                    description="출석 보상이나 아이템 사용 내역이 아직 없습니다."
-                  />
+                  <Box h="full">
+                    <EmptyState
+                      title="수박씨 내역이 없습니다"
+                      description="출석 보상이나 아이템 사용 내역이 아직 없습니다."
+                    />
+                  </Box>
                 ) : (
-                  <Box maxH={{ base: '320px', md: '360px' }} overflowY="auto" pr={1}>
+                  <Box h="full" overflowY="auto" pr={1}>
                     <Stack spacing={3}>
                       {coinHistories.map((history, index) => (
                         <Box
@@ -657,12 +660,14 @@ export const MyLockersPage = () => {
                   </Box>
                 )
               ) : itemHistories.length === 0 ? (
-                <EmptyState
-                  title="아이템 내역이 없습니다"
-                  description="아이템 구매/사용 기록이 아직 없습니다."
-                />
+                <Box h="full">
+                  <EmptyState
+                    title="아이템 내역이 없습니다"
+                    description="아이템 구매/사용 기록이 아직 없습니다."
+                  />
+                </Box>
               ) : (
-                <Box maxH={{ base: '320px', md: '360px' }} overflowY="auto" pr={1}>
+                <Box h="full" overflowY="auto" pr={1}>
                   <Stack spacing={3}>
                     {itemHistories.map((history, index) => {
                       const label = resolveItemLabel(history.itemType, history.itemName)
