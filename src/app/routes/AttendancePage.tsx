@@ -9,7 +9,7 @@ import {
   Text,
   useColorModeValue,
 } from '@chakra-ui/react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PageHeader } from '@/components/molecules/PageHeader'
 import { LoadingState } from '@/components/molecules/LoadingState'
 import { ErrorState } from '@/components/molecules/ErrorState'
@@ -33,6 +33,7 @@ export const AttendancePage = () => {
   const { data, isLoading, isError, refetch } = useAttendanceQuery(isLoggedIn)
   const attendanceMutation = useAttendanceMutation()
   const [current, setCurrent] = useState(() => new Date())
+  const [selectedDate, setSelectedDate] = useState(() => formatDateKey(new Date()))
 
   const attendanceSet = useMemo(() => new Set(Array.isArray(data) ? data : []), [data])
   const todayKey = formatDateKey(new Date())
@@ -54,15 +55,24 @@ export const AttendancePage = () => {
   }, [firstDay, daysInMonth])
 
   const eventsByDate = useMemo(() => {
-    const map = new Map<string, Array<{ title: string }>>()
+    const map = new Map<
+      string,
+      Array<{ title: string; description?: string | null; announcerName?: string | null }>
+    >()
     const items = calendarQuery.data ?? []
     for (const event of items) {
       const list = map.get(event.eventDate) ?? []
-      list.push({ title: event.title })
+      list.push({
+        title: event.title,
+        description: event.description,
+        announcerName: event.announcerName,
+      })
       map.set(event.eventDate, list)
     }
     return map
   }, [calendarQuery.data])
+
+  const selectedDayEvents = eventsByDate.get(selectedDate) ?? []
 
   const cardBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200')
@@ -70,6 +80,16 @@ export const AttendancePage = () => {
   const attendedText = useColorModeValue('leaf.800', 'leaf.50')
   const defaultDayBg = useColorModeValue('gray.50', 'gray.700')
   const weekdayColor = useColorModeValue('gray.500', 'gray.400')
+  const selectedBg = useColorModeValue('blue.50', 'blue.900')
+  const calendarBorder = useColorModeValue('gray.200', 'whiteAlpha.300')
+  const monthLabel = new Date(year, month, 1).toLocaleString('en-US', { month: 'long' })
+
+  useEffect(() => {
+    const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`
+    if (!selectedDate.startsWith(monthKey)) {
+      setSelectedDate(formatDateKey(new Date(year, month, 1)))
+    }
+  }, [year, month, selectedDate])
 
   if (meLoading) return <LoadingState label="로그인 상태를 확인하는 중입니다." />
   if (!isLoggedIn) {
@@ -122,71 +142,94 @@ export const AttendancePage = () => {
 
       <Box borderWidth={1} borderColor={borderColor} borderRadius="xl" bg={cardBg} p={6}>
         <HStack justify="space-between" mb={4} flexWrap="wrap" gap={3}>
-          <Text fontWeight="bold">
-            {year}년 {month + 1}월 일정
-          </Text>
           <HStack spacing={2}>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setCurrent(new Date(year, month - 1, 1))}
-            >
-              이전 달
+            <Button size="sm" variant="ghost" onClick={() => setCurrent(new Date(year, month - 1, 1))}>
+              ◀
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setCurrent(new Date())}
-            >
-              이번 달
+            <Button size="sm" variant="ghost" onClick={() => setCurrent(new Date())}>
+              오늘
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setCurrent(new Date(year, month + 1, 1))}
-            >
-              다음 달
+            <Button size="sm" variant="ghost" onClick={() => setCurrent(new Date(year, month + 1, 1))}>
+              ▶
+            </Button>
+          </HStack>
+          <Text fontWeight="bold" fontSize="lg" textAlign="center" flex="1">
+            {monthLabel}
+          </Text>
+          <HStack spacing={1} p={1} borderRadius="full" bg={defaultDayBg}>
+            <Button size="xs" variant="solid">
+              Month
+            </Button>
+            <Button size="xs" variant="ghost" isDisabled>
+              Week
             </Button>
           </HStack>
         </HStack>
-        <SimpleGrid columns={7} spacing={2} mb={2}>
-          {weekdayLabels.map((label) => (
-            <Text key={label} textAlign="center" fontWeight="semibold" color={weekdayColor} fontSize="sm">
-              {label}
-            </Text>
+
+        <SimpleGrid columns={7} spacing={0} borderWidth={1} borderColor={calendarBorder} borderRadius="lg" overflow="hidden">
+          {weekdayLabels.map((label, index) => (
+            <Box
+              key={label}
+              py={2}
+              textAlign="center"
+              borderRightWidth={index === 6 ? 0 : 1}
+              borderBottomWidth={1}
+              borderColor={calendarBorder}
+              bg={cardBg}
+            >
+              <Text fontWeight="semibold" color={weekdayColor} fontSize="sm">
+                {label}
+              </Text>
+            </Box>
           ))}
-        </SimpleGrid>
-        <SimpleGrid columns={7} spacing={2}>
+
           {calendarCells.map((day, index) => {
+            const isLastColumn = (index + 1) % 7 === 0
+            const isLastRow = index >= calendarCells.length - 7
             if (day === null) {
-              return <Box key={`empty-${index}`} />
+              return (
+                <Box
+                  key={`empty-${index}`}
+                  minH="96px"
+                  borderRightWidth={isLastColumn ? 0 : 1}
+                  borderBottomWidth={isLastRow ? 0 : 1}
+                  borderColor={calendarBorder}
+                />
+              )
             }
             const dateKey = formatDateKey(new Date(year, month, day))
             const attended = attendanceSet.has(dateKey)
             const dailyEvents = eventsByDate.get(dateKey) ?? []
+            const isSelected = dateKey === selectedDate
             return (
               <Box
                 key={dateKey}
-                borderRadius="md"
+                minH="96px"
+                px={3}
                 py={2}
-                px={2}
-                bg={attended ? attendedColor : defaultDayBg}
+                borderRightWidth={isLastColumn ? 0 : 1}
+                borderBottomWidth={isLastRow ? 0 : 1}
+                borderColor={calendarBorder}
+                bg={isSelected ? selectedBg : attended ? attendedColor : 'transparent'}
                 color={attended ? attendedText : undefined}
-                borderWidth={attended ? 0 : 1}
-                borderColor={borderColor}
+                cursor="pointer"
+                onClick={() => setSelectedDate(dateKey)}
               >
-                <Stack spacing={1}>
-                  <Text fontWeight={attended ? 'bold' : 'medium'} textAlign="center">
-                    {day}
-                  </Text>
-                  {dailyEvents.slice(0, 2).map((event, idx) => (
-                    <Text key={`${event.title}-${idx}`} fontSize="xs" noOfLines={1}>
-                      {event.title}
-                    </Text>
+                <Text fontWeight="semibold" fontSize="sm">
+                  {day}
+                </Text>
+                <Stack spacing={1} mt={1}>
+                  {dailyEvents.slice(0, 1).map((event, idx) => (
+                    <HStack key={`${event.title}-${idx}`} spacing={1} align="center">
+                      <Box w="6px" h="6px" borderRadius="full" bg="blue.400" />
+                      <Text fontSize="xs" noOfLines={1}>
+                        {event.title}
+                      </Text>
+                    </HStack>
                   ))}
-                  {dailyEvents.length > 2 && (
-                    <Text fontSize="xs" color={attended ? attendedText : weekdayColor}>
-                      +{dailyEvents.length - 2}개 더보기
+                  {dailyEvents.length > 1 && (
+                    <Text fontSize="xs" color={weekdayColor}>
+                      +{dailyEvents.length - 1} more
                     </Text>
                   )}
                 </Stack>
@@ -194,6 +237,35 @@ export const AttendancePage = () => {
             )
           })}
         </SimpleGrid>
+
+        <Box mt={4} borderWidth={1} borderColor={borderColor} borderRadius="lg" p={4}>
+          <Text fontWeight="bold" mb={2}>
+            {selectedDate}
+          </Text>
+          {selectedDayEvents.length ? (
+            <Stack spacing={3}>
+              {selectedDayEvents.map((event, idx) => (
+                <Box key={`${event.title}-${idx}`} borderWidth={1} borderRadius="md" p={3}>
+                  <Text fontWeight="semibold">{event.title}</Text>
+                  {event.description && (
+                    <Text fontSize="sm" color={weekdayColor}>
+                      {event.description}
+                    </Text>
+                  )}
+                  {event.announcerName && (
+                    <Text fontSize="xs" color={weekdayColor}>
+                      등록자: {event.announcerName}
+                    </Text>
+                  )}
+                </Box>
+              ))}
+            </Stack>
+          ) : (
+            <Text fontSize="sm" color={weekdayColor}>
+              선택한 날짜에 일정이 없습니다.
+            </Text>
+          )}
+        </Box>
 
         {!hasRecords && (
           <Box mt={6}>
