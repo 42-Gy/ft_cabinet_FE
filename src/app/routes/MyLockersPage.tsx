@@ -121,14 +121,17 @@ export const MyLockersPage = () => {
       /^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?$/,
     )
     if (isoMatch) {
-      const [, year, month, day, hour = '0', minute = '0', second = '0'] = isoMatch
+      const [, year, month, day, hour, minute, second] = isoMatch
+      if (!hour || !minute) {
+        return `${pad2(month)}월 ${pad2(day)}일`
+      }
       const parsed = new Date(
         Number(year),
         Number(month) - 1,
         Number(day),
         Number(hour),
         Number(minute),
-        Number(second),
+        Number(second ?? '0'),
       )
       return `${pad2(parsed.getMonth() + 1)}월 ${pad2(parsed.getDate())}일 ${pad2(
         parsed.getHours(),

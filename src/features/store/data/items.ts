@@ -81,3 +81,10 @@ export const STORE_ITEM_META_BY_TYPE: Record<StoreItemType, { title: string; ico
     icon: RiShieldCheckLine,
   },
 }
+
+export const STORE_ITEM_DESCRIPTION_BY_TYPE: Record<StoreItemType, string> = {
+  LENT: '사물함을 31일간 대여할 수 있습니다.',
+  EXTENSION: '대여 기간을 3일 연장합니다. (최대 보유 5개/월 구매 5회)',
+  SWAP: '현재 반납일 그대로 다른 사물함으로 이동합니다.',
+  PENALTY_EXEMPTION: '패널티 기간을 1일 줄여줍니다.',
+}

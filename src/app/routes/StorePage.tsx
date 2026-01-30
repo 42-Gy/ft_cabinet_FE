@@ -6,7 +6,7 @@ import { LoadingState } from '@/components/molecules/LoadingState'
 import { ErrorState } from '@/components/molecules/ErrorState'
 import { useMeQuery } from '@/features/users/hooks/useMeQuery'
 import { useBuyItemMutation } from '@/features/lockers/hooks/useLockerData'
-import { STORE_ITEM_META_BY_TYPE } from '@/features/store/data/items'
+import { STORE_ITEM_DESCRIPTION_BY_TYPE, STORE_ITEM_META_BY_TYPE } from '@/features/store/data/items'
 import { useStoreItemsQuery } from '@/features/store/hooks/useStoreItems'
 import type { StoreItemResponse } from '@/features/store/types'
 
@@ -47,7 +47,7 @@ export const StorePage = () => {
   const toDisplayItem = (item: StoreItemResponse) => {
     const meta = STORE_ITEM_META_BY_TYPE[item.type]
     const title = meta?.title ?? item.name
-    const description = item.description || `${title} 아이템입니다.`
+    const description = STORE_ITEM_DESCRIPTION_BY_TYPE[item.type] || item.description || `${title} 아이템입니다.`
     const priceLabel = `${Number(item.price ?? 0).toLocaleString()} 수박씨`
     return {
       id: item.itemId,
