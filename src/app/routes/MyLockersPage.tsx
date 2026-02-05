@@ -75,7 +75,6 @@ export const MyLockersPage = () => {
   const itemBg = useColorModeValue('gray.50', 'gray.700')
   const earnColor = useColorModeValue('leaf.600', 'leaf.300')
   const spendColor = useColorModeValue('red.500', 'red.300')
-  const itemPanelHeight = { base: '720px', md: '640px' }
   const itemTypeLabels: Record<UserItemType, string> = {
     EXTENSION: '연장권',
     SWAP: '이사권',
@@ -96,18 +95,6 @@ export const MyLockersPage = () => {
     return itemName ?? '아이템'
   }
 
-  const resolveCoinReason = (reason?: string | null) => {
-    if (!reason) return '수박씨 변동'
-    const normalized = reason.replace(/\s+/g, '').toUpperCase()
-    if (normalized.includes('PENALTY_EXEMPTION') || normalized.includes('PENATLY_EXEMPTION')) {
-      return '패널티 감면권 구매'
-    }
-    if (normalized.includes('EXTENSION')) return '연장권 구매'
-    if (normalized.includes('SWAP')) return '이사권 구매'
-    if (normalized.includes('LENT')) return '대여권 보상'
-    return reason
-  }
-
   const formatHistoryDate = (value?: string | null) => {
     if (!value) return '-'
     const koreanMatch = value.match(/(\d{1,2})월\s*(\d{1,2})일\s*(\d{1,2}):(\d{2})/)
@@ -116,28 +103,7 @@ export const MyLockersPage = () => {
       const [, month, day, hour, minute] = koreanMatch
       return `${pad2(month)}월 ${pad2(day)}일 ${pad2(hour)}시 ${pad2(minute)}분`
     }
-    const normalized = value.replace(/\.(\d{3})\d+/, '.$1')
-    const isoMatch = normalized.match(
-      /^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?$/,
-    )
-    if (isoMatch) {
-      const [, year, month, day, hour, minute, second] = isoMatch
-      if (!hour || !minute) {
-        return `${pad2(month)}월 ${pad2(day)}일`
-      }
-      const parsed = new Date(
-        Number(year),
-        Number(month) - 1,
-        Number(day),
-        Number(hour),
-        Number(minute),
-        Number(second ?? '0'),
-      )
-      return `${pad2(parsed.getMonth() + 1)}월 ${pad2(parsed.getDate())}일 ${pad2(
-        parsed.getHours(),
-      )}시 ${pad2(parsed.getMinutes())}분`
-    }
-    const parsed = new Date(normalized)
+    const parsed = new Date(value)
     if (Number.isNaN(parsed.getTime())) {
       return value
     }
@@ -149,34 +115,6 @@ export const MyLockersPage = () => {
   const myItems = me?.myItems ?? []
   const coinHistories = me?.coinHistories ?? []
   const itemHistories = me?.itemHistories ?? []
-  const [now, setNow] = useState(() => Date.now())
-
-  useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 60000)
-    return () => clearInterval(interval)
-  }, [])
-
-  const formatRemainingTime = (value?: string | null) => {
-    if (!value) return '-'
-    const koreanMatch = value.match(/(\d{1,2})월\s*(\d{1,2})일\s*(\d{1,2}):(\d{2})/)
-    const parsed = koreanMatch
-      ? new Date(
-          new Date().getFullYear(),
-          Number(koreanMatch[1]) - 1,
-          Number(koreanMatch[2]),
-          Number(koreanMatch[3]),
-          Number(koreanMatch[4]),
-        )
-      : new Date(value)
-    if (Number.isNaN(parsed.getTime())) return '-'
-    const diffMs = parsed.getTime() - now
-    if (diffMs <= 0) return '0일 0시간 0분'
-    const totalMinutes = Math.floor(diffMs / 60000)
-    const days = Math.floor(totalMinutes / (60 * 24))
-    const hours = Math.floor((totalMinutes % (60 * 24)) / 60)
-    const minutes = totalMinutes % 60
-    return `${days}일 ${hours}시간 ${minutes}분`
-  }
   const itemCounts = useMemo(() => {
     return myItems.reduce<Record<UserItemType, number>>((acc, item) => {
       acc[item.itemType] = (acc[item.itemType] ?? 0) + 1
@@ -292,6 +230,15 @@ export const MyLockersPage = () => {
         onSuccess: () => {
           handleReturnClose()
         },
+        onSettled: () => {
+          setReturnFile(null)
+          setReturnPassword('')
+          setForceReturn(false)
+          setForceReason('')
+          setImageCheckPassed(false)
+          setImageCheckFailures(0)
+          setImageCheckError(null)
+        },
       },
     )
   }
@@ -307,14 +254,9 @@ export const MyLockersPage = () => {
       },
       onError: () => {
         setImageCheckPassed(false)
-        const nextFailures = imageCheckFailures + 1
-        setImageCheckFailures(nextFailures)
-        const remaining = Math.max(0, 2 - nextFailures)
-        if (remaining === 0) {
-          setImageCheckError('수동 반납 신청 버튼이 활성화 되었습니다.')
-        } else {
-          setImageCheckError(`수동 반납 신청 버튼 활성화까지 ${remaining}회 남았습니다`)
-        }
+        setImageCheckFailures((prev) => prev + 1)
+        const remaining = Math.max(0, 2 - (imageCheckFailures + 1))
+        setImageCheckError(`관리자 수동 반납 신청 버튼 활성화까지 ${remaining}회 남았습니다`)
       },
     })
   }
@@ -454,11 +396,21 @@ export const MyLockersPage = () => {
     await handleStartCamera()
   }
 
+  const handleFileSelect = (file: File | null) => {
+    setReturnFile(file)
+    setReturnPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return file ? URL.createObjectURL(file) : null
+    })
+    setImageCheckPassed(false)
+    setImageCheckError(null)
+  }
+
   return (
     <Stack spacing={8}>
       <PageHeader
-        title="내 사물함 & 보유아이템"
-        description="현재 수박씨, 대여 중인 사물함, 보유한 아이템을 한 번에 확인하세요."
+        title="내 사물함 & 자산"
+        description="현재 코인, 대여 중인 사물함, 보유한 아이템을 한 번에 확인하세요."
       />
 
       <Stack spacing={6} direction={{ base: 'column', md: 'row' }} align="flex-start">
@@ -479,19 +431,11 @@ export const MyLockersPage = () => {
             <Text fontSize="sm" color={textMuted}>
               {me.name} · {me.email}
             </Text>
-            <Box>
-              <Text fontSize="sm" color={textMuted}>
-                보유 수박씨
-              </Text>
-              <Text fontSize="2xl" fontWeight="bold">
-                {(me.coin ?? 0).toLocaleString()}개
-              </Text>
-            </Box>
+            <Badge colorScheme="purple" w="fit-content">
+              수박씨 {(me.coin ?? 0).toLocaleString()}개
+            </Badge>
             <Text fontSize="sm" color={textMuted}>
-              이번 달 로그타임: {((me.monthlyLogtime ?? 0) / 60).toFixed(1)}시간
-            </Text>
-            <Text fontSize="xs" color={textMuted}>
-              프랑스 API 시차로 실제 시간과 오차가 있을 수 있습니다.
+              이번 달 로그타임: {(me.monthlyLogtime ?? 0).toLocaleString()}분
             </Text>
             <Text fontSize="sm" color={textMuted}>
               패널티 일수: {me.penaltyDays ?? 0}일
@@ -508,27 +452,18 @@ export const MyLockersPage = () => {
               <Text fontSize="2xl" fontWeight="bold">
                 #{me.visibleNum} · {me.section}
               </Text>
+              {me.lentStartedAt && (
+                <Text fontSize="sm" color={textMuted}>
+                  대여 시작: {formatDate(me.lentStartedAt)}
+                </Text>
+              )}
               {(() => {
                 const expiresAt = me.expiredAt ?? me.lentExpiredAt ?? null
-                if (!me.lentStartedAt && !expiresAt) return null
+                if (!expiresAt) return null
                 return (
-                  <Stack spacing={1}>
-                    {me.lentStartedAt && (
-                      <Text fontSize="sm" color={textMuted}>
-                        대여 시작: {formatDate(me.lentStartedAt)}
-                      </Text>
-                    )}
-                    {expiresAt && (
-                      <>
-                        <Text fontSize="sm" color={textMuted}>
-                          만료 예정: {formatDate(expiresAt)}
-                        </Text>
-                        <Text fontSize="sm" fontWeight="semibold" color="brand.500">
-                          만료까지: {formatRemainingTime(expiresAt)}
-                        </Text>
-                      </>
-                    )}
-                  </Stack>
+                  <Text fontSize="sm" color={textMuted}>
+                    만료 예정: {formatDate(expiresAt)}
+                  </Text>
                 )
               })()}
               {me.previousPassword && (
@@ -609,16 +544,16 @@ export const MyLockersPage = () => {
                 </Button>
               </HStack>
             </HStack>
-            <Box minH={itemPanelHeight} h={itemPanelHeight}>
+            <Box minH={{ base: '600px', md: '600px' }}>
               {historyTab === 'items' ? (
-                <Stack spacing={3} h="full">
+                <Stack spacing={3}>
                   {(() => {
                     const count = getCount('EXTENSION')
                     const useStore = count === 0
                     return (
                       <TicketCard
                         title="연장권"
-                        description="대여 기간을 3일 연장합니다. (최대 보유 5개/월 구매 5회)"
+                        description="현재 사물함을 15일 연장합니다."
                         count={count}
                         buttonLabel={useStore ? '스토어 가서 구매하기' : '연장하기'}
                         onClick={useStore ? () => navigate('/store') : () => handleUseTicket('EXTENSION')}
@@ -637,7 +572,7 @@ export const MyLockersPage = () => {
                     return (
                       <TicketCard
                         title="이사권"
-                        description="현재 반납일 그대로 다른 사물함으로 이동합니다."
+                        description="다른 번호로 이동할 수 있습니다."
                         count={count}
                         buttonLabel={useStore ? '스토어 가서 구매하기' : '이동하기'}
                         onClick={useStore ? () => navigate('/store') : () => handleUseTicket('SWAP')}
@@ -655,7 +590,7 @@ export const MyLockersPage = () => {
                     return (
                       <TicketCard
                         title="패널티 감면권"
-                        description="패널티 기간을 1일 줄여줍니다."
+                        description="패널티 일수를 1회 면제합니다."
                         count={count}
                         buttonLabel={useStore ? '스토어 가서 구매하기' : '감면하기'}
                         onClick={
@@ -672,7 +607,7 @@ export const MyLockersPage = () => {
                   })()}
                   <TicketCard
                     title="대여권"
-                    description="사물함을 31일간 대여할 수 있습니다."
+                    description="출석/미션 보상으로만 사용할 수 있습니다."
                     count={getCount('LENT')}
                     buttonLabel="관리자 지급"
                     onClick={() => {}}
@@ -684,14 +619,12 @@ export const MyLockersPage = () => {
                 </Stack>
               ) : historyTab === 'coin' ? (
                 coinHistories.length === 0 ? (
-                  <Box h="full">
-                    <EmptyState
-                      title="수박씨 내역이 없습니다"
-                      description="출석 보상이나 아이템 사용 내역이 아직 없습니다."
-                    />
-                  </Box>
+                  <EmptyState
+                    title="수박씨 내역이 없습니다"
+                    description="출석 보상이나 아이템 사용 내역이 아직 없습니다."
+                  />
                 ) : (
-                  <Box h="full" overflowY="auto" pr={1}>
+                  <Box maxH={{ base: '320px', md: '360px' }} overflowY="auto" pr={1}>
                     <Stack spacing={3}>
                       {coinHistories.map((history, index) => (
                         <Box
@@ -704,7 +637,7 @@ export const MyLockersPage = () => {
                           <HStack justify="space-between" align="center">
                             <Stack spacing={1}>
                               <Text fontWeight="semibold">
-                                {resolveCoinReason(history.reason)}
+                                {history.reason ?? '수박씨 변동'}
                               </Text>
                               <Text fontSize="sm" color={textMuted}>
                                 {formatHistoryDate(history.date)}
@@ -724,14 +657,12 @@ export const MyLockersPage = () => {
                   </Box>
                 )
               ) : itemHistories.length === 0 ? (
-                <Box h="full">
-                  <EmptyState
-                    title="아이템 내역이 없습니다"
-                    description="아이템 구매/사용 기록이 아직 없습니다."
-                  />
-                </Box>
+                <EmptyState
+                  title="아이템 내역이 없습니다"
+                  description="아이템 구매/사용 기록이 아직 없습니다."
+                />
               ) : (
-                <Box h="full" overflowY="auto" pr={1}>
+                <Box maxH={{ base: '320px', md: '360px' }} overflowY="auto" pr={1}>
                   <Stack spacing={3}>
                     {itemHistories.map((history, index) => {
                       const label = resolveItemLabel(history.itemType, history.itemName)
@@ -885,7 +816,7 @@ export const MyLockersPage = () => {
                           size="sm"
                           colorScheme="brand"
                           onClick={handleCheckImage}
-                          isDisabled={!returnFile || imageCheckFailures >= 2}
+                          isDisabled={!returnFile}
                           isLoading={imageCheckMutation.isPending}
                         >
                           다음 (AI 검증)
@@ -907,6 +838,11 @@ export const MyLockersPage = () => {
                         )}
                       </Stack>
                     )}
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(event) => handleFileSelect(event.target.files?.[0] ?? null)}
+                    />
                   </FormControl>
                 </Stack>
               )}
@@ -918,15 +854,10 @@ export const MyLockersPage = () => {
                   <FormControl>
                     <FormLabel>이전 비밀번호 (4자리)</FormLabel>
                     <Input
-                      type="tel"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
+                      type="text"
                       maxLength={4}
                       value={returnPassword}
-                      onChange={(event) => {
-                        const onlyDigits = event.target.value.replace(/\D/g, '')
-                        setReturnPassword(onlyDigits.slice(0, 4))
-                      }}
+                      onChange={(event) => setReturnPassword(event.target.value)}
                     />
                   </FormControl>
                   {forceReturn && (
