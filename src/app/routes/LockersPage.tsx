@@ -443,16 +443,6 @@ export const LockersPage = () => {
     setSwapStep('return')
   }
 
-  const handleSwapFileSelect = (file: File | null) => {
-    setSwapFile(file)
-    setSwapPreviewUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev)
-      return file ? URL.createObjectURL(file) : null
-    })
-    setSwapCheckPassed(false)
-    setSwapCheckError(null)
-  }
-
   function handleSwapStopCamera() {
     swapStreamRef.current?.getTracks().forEach((track) => track.stop())
     swapStreamRef.current = null
@@ -1034,11 +1024,6 @@ export const LockersPage = () => {
                       )}
                     </Stack>
                   )}
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(event) => handleSwapFileSelect(event.target.files?.[0] ?? null)}
-                  />
                 </FormControl>
 
                 {(swapCheckPassed || swapCheckFailures >= 2 || swapForceReturn) && (
