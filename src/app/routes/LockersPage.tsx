@@ -879,24 +879,19 @@ export const LockersPage = () => {
       <Modal
         isOpen={swapModal.isOpen}
         onClose={handleSwapModalClose}
-        size="lg"
-        scrollBehavior="inside"
+        size={{ base: 'full', md: 'lg' }}
+        scrollBehavior="outside"
       >
         <ModalOverlay />
         <ModalContent
-          maxH={{ base: '90dvh', md: '85vh' }}
-          overflow="hidden"
-          display="flex"
-          flexDirection="column"
+          maxH={{ base: '100dvh', md: '85vh' }}
+          overflowY="auto"
         >
           <ModalHeader>
             {swapStep === 'confirm' ? '이사 예약' : '사물함 반납 후 이사'}
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody
-            flex="1"
-            minH={0}
-            overflowY="auto"
             sx={{ WebkitOverflowScrolling: 'touch' }}
           >
             {swapStep === 'confirm' ? (
