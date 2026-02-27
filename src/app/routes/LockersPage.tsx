@@ -883,13 +883,19 @@ export const LockersPage = () => {
         scrollBehavior="inside"
       >
         <ModalOverlay />
-        <ModalContent maxH={{ base: '90vh', md: '85vh' }} overflow="hidden">
+        <ModalContent
+          maxH={{ base: '90dvh', md: '85vh' }}
+          overflow="hidden"
+          display="flex"
+          flexDirection="column"
+        >
           <ModalHeader>
             {swapStep === 'confirm' ? '이사 예약' : '사물함 반납 후 이사'}
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody
             flex="1"
+            minH={0}
             overflowY="auto"
             sx={{ WebkitOverflowScrolling: 'touch' }}
           >
@@ -999,7 +1005,11 @@ export const LockersPage = () => {
                         overflow="hidden"
                         bg="blackAlpha.200"
                       >
-                        <img src={swapPreviewUrl} alt="이사 촬영 미리보기" style={{ width: '100%' }} />
+                        <img
+                          src={swapPreviewUrl}
+                          alt="이사 촬영 미리보기"
+                          style={{ width: '100%', maxHeight: '40vh', objectFit: 'contain' }}
+                        />
                       </Box>
                       <Text fontSize="sm" color={mutedText}>
                         선택됨: {swapFile?.name}
