@@ -876,14 +876,23 @@ export const LockersPage = () => {
         )}
       </Stack>
 
-      <Modal isOpen={swapModal.isOpen} onClose={handleSwapModalClose} size="lg">
+      <Modal
+        isOpen={swapModal.isOpen}
+        onClose={handleSwapModalClose}
+        size="lg"
+        scrollBehavior="inside"
+      >
         <ModalOverlay />
-        <ModalContent>
+        <ModalContent maxH={{ base: '90vh', md: '85vh' }} overflow="hidden">
           <ModalHeader>
             {swapStep === 'confirm' ? '이사 예약' : '사물함 반납 후 이사'}
           </ModalHeader>
           <ModalCloseButton />
-          <ModalBody maxH="70vh" overflowY="auto">
+          <ModalBody
+            flex="1"
+            overflowY="auto"
+            sx={{ WebkitOverflowScrolling: 'touch' }}
+          >
             {swapStep === 'confirm' ? (
               <Stack spacing={4}>
                 <Text fontWeight="bold">
