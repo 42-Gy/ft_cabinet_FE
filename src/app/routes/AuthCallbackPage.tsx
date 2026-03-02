@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Button, Stack } from '@chakra-ui/react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { LoadingState } from '@/components/molecules/LoadingState'
 import { ErrorState } from '@/components/molecules/ErrorState'
+import { LoadingState } from '@/components/molecules/LoadingState'
 import { fetchMe } from '@/features/users/api/me'
+import { meQueryKeys } from '@/features/users/hooks/useMeQuery'
 
 type CallbackStatus = 'checking' | 'failed'
 
 export const AuthCallbackPage = () => {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [status, setStatus] = useState<CallbackStatus>('checking')
 
   useEffect(() => {
@@ -18,6 +21,7 @@ export const AuthCallbackPage = () => {
       const me = await fetchMe()
       if (!isMounted) return
       if (me) {
+        queryClient.setQueryData(meQueryKeys.root, me)
         navigate('/', { replace: true })
         return
       }
@@ -32,7 +36,7 @@ export const AuthCallbackPage = () => {
     return () => {
       isMounted = false
     }
-  }, [navigate])
+  }, [navigate, queryClient])
 
   if (status === 'checking') {
     return <LoadingState label="로그인 상태를 확인하는 중입니다." />

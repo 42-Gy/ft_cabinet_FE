@@ -9,6 +9,7 @@ import { StorePage } from '@/app/routes/StorePage'
 import { NotFoundPage } from '@/app/routes/NotFoundPage'
 import { AdminGate } from '@/app/routes/AdminGate'
 import { AuthCallbackPage } from '@/app/routes/AuthCallbackPage'
+import { MaintenancePage } from '@/app/routes/MaintenancePage'
 
 export const appRoutes: RouteObject[] = [
   {
@@ -23,6 +24,7 @@ export const appRoutes: RouteObject[] = [
       { path: 'attendance', element: <AttendancePage /> },
       { path: 'policy', element: <PolicyPage /> },
       { path: 'auth/callback', element: <AuthCallbackPage /> },
+      { path: 'repair', element: <MaintenancePage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

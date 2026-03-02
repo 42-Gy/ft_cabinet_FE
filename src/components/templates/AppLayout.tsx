@@ -14,7 +14,8 @@ import {
 } from '@chakra-ui/react'
 import { FiMoon, FiSun } from 'react-icons/fi'
 import { HiOutlineMenu, HiOutlineX } from 'react-icons/hi'
-import { NavLink, Outlet, Link as RouterLink } from 'react-router-dom'
+import { NavLink, Outlet, Link as RouterLink, useLocation } from 'react-router-dom'
+import { MaintenancePage } from '@/app/routes/MaintenancePage'
 import { useAuthSession } from '@/features/auth/hooks/useAuthSession'
 import { env } from '@/libs/env'
 
@@ -30,6 +31,7 @@ const routes = [
 export const AppLayout = () => {
   const { isOpen, onToggle, onClose } = useDisclosure()
   const { isAuthenticated, logout, me } = useAuthSession()
+  const location = useLocation()
   const { colorMode, toggleColorMode } = useColorMode()
   const headerBg = useColorModeValue('white', 'gray.900')
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200')
@@ -57,6 +59,9 @@ export const AppLayout = () => {
   }, [])
 
   const isAdmin = me?.role === 'ADMIN' || me?.role === 'ROLE_ADMIN' || me?.role === 'MASTER'
+  const isMaintenanceMode = true
+  const isAuthCallbackPath = location.pathname === '/auth/callback'
+  const shouldShowMaintenance = isMaintenanceMode && !isAdmin && !isAuthCallbackPath
   const renderLinks = (direction: 'row' | 'column') => (
     <Stack
       spacing={direction === 'row' ? 6 : 4}
@@ -81,6 +86,10 @@ export const AppLayout = () => {
         ))}
     </Stack>
   )
+
+  if (shouldShowMaintenance) {
+    return <MaintenancePage />
+  }
 
   return (
     <Flex direction="column" minH="100vh">
