@@ -1,10 +1,33 @@
 import { keyframes } from '@emotion/react'
 import { Box, Button, Flex, Heading, HStack, Stack, Text, useColorModeValue } from '@chakra-ui/react'
+import { useEffect, useState } from 'react'
 import { useAuthSession } from '@/features/auth/hooks/useAuthSession'
+import { formatKstDateTime, getMaintenanceEndAt } from '@/utils/maintenance'
 
-export const MaintenancePage = () => {
+const formatCountdown = (remainingMs: number) => {
+  const totalSeconds = Math.max(0, Math.floor(remainingMs / 1000))
+  const days = Math.floor(totalSeconds / 86400)
+  const hours = Math.floor((totalSeconds % 86400) / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  return {
+    days,
+    hours,
+    minutes,
+    seconds,
+  }
+}
+
+interface MaintenancePageProps {
+  endAt?: Date
+}
+
+export const MaintenancePage = ({ endAt }: MaintenancePageProps) => {
   const { isAuthenticated, logout, me, isLoading } = useAuthSession()
   const isAdmin = me?.role === 'ADMIN' || me?.role === 'ROLE_ADMIN' || me?.role === 'MASTER'
+  const targetAt = endAt ?? getMaintenanceEndAt()
+  const [remainingMs, setRemainingMs] = useState(() => targetAt.getTime() - Date.now())
 
   const riseIn = keyframes`
     from {
@@ -29,6 +52,15 @@ export const MaintenancePage = () => {
       window.location.href = '/oauth2/authorization/42'
     }
   }
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setRemainingMs(targetAt.getTime() - Date.now())
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [targetAt])
+
+  const { days, hours, minutes, seconds } = formatCountdown(remainingMs)
 
   return (
     <Flex
@@ -91,8 +123,41 @@ export const MaintenancePage = () => {
               지금은 잠시 점검 중입니다.
             </Heading>
             <Text fontSize={{ base: 'md', md: 'lg' }} color={mutedText}>
-              정식 운영 전 안정화 작업을 진행하고 있습니다. 서비스 품질을 높이기 위한 준비 시간이니,
+              정식 운영 전입니다. 안정화 작업을 진행하고 있습니다. 서비스 품질을 높이기 위한 준비 시간이니,
               잠시 후 다시 방문해 주세요.
+            </Text>
+          </Stack>
+
+          <Stack spacing={3}>
+            <Text fontWeight="bold" fontSize="lg" color={accentText}>
+              정식 운영 시작까지
+            </Text>
+            <HStack spacing={3} flexWrap="wrap">
+              {[{ label: '일', value: days }, { label: '시간', value: hours }, { label: '분', value: minutes }, { label: '초', value: seconds }].map(
+                (item) => (
+                  <Box
+                    key={item.label}
+                    minW="86px"
+                    px={4}
+                    py={3}
+                    borderRadius="16px"
+                    borderWidth={1}
+                    borderColor={useColorModeValue('brand.100', 'whiteAlpha.200')}
+                    bg={useColorModeValue('white', 'gray.800')}
+                    textAlign="center"
+                  >
+                    <Text fontSize="xl" fontWeight="bold">
+                      {String(item.value).padStart(2, '0')}
+                    </Text>
+                    <Text fontSize="xs" color={mutedText}>
+                      {item.label}
+                    </Text>
+                  </Box>
+                ),
+              )}
+            </HStack>
+            <Text fontSize="sm" color={mutedText}>
+              정식 운영 예정: {formatKstDateTime(targetAt)}
             </Text>
           </Stack>
 

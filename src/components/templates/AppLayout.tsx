@@ -18,6 +18,7 @@ import { NavLink, Outlet, Link as RouterLink, useLocation } from 'react-router-d
 import { MaintenancePage } from '@/app/routes/MaintenancePage'
 import { useAuthSession } from '@/features/auth/hooks/useAuthSession'
 import { env } from '@/libs/env'
+import { getMaintenanceEndAt } from '@/utils/maintenance'
 
 const routes = [
   { to: '/admin', label: '관리자', requiresAdmin: true },
@@ -59,7 +60,8 @@ export const AppLayout = () => {
   }, [])
 
   const isAdmin = me?.role === 'ADMIN' || me?.role === 'ROLE_ADMIN' || me?.role === 'MASTER'
-  const isMaintenanceMode = true
+  const maintenanceEndAt = getMaintenanceEndAt()
+  const isMaintenanceMode = Date.now() < maintenanceEndAt.getTime()
   const isAuthCallbackPath = location.pathname === '/auth/callback'
   const shouldShowMaintenance = isMaintenanceMode && !isAdmin && !isAuthCallbackPath
   const renderLinks = (direction: 'row' | 'column') => (
@@ -88,7 +90,7 @@ export const AppLayout = () => {
   )
 
   if (shouldShowMaintenance) {
-    return <MaintenancePage />
+    return <MaintenancePage endAt={maintenanceEndAt} />
   }
 
   return (
