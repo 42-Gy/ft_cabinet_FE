@@ -159,6 +159,9 @@ export const MaintenancePage = ({ endAt }: MaintenancePageProps) => {
             <Text fontSize="sm" color={mutedText}>
               정식 운영 예정: {formatKstDateTime(targetAt)}
             </Text>
+            <Text fontSize="sm" color={mutedText}>
+              정식 운영 시작 시각 이후 일반 사용자 로그인 가능합니다.
+            </Text>
           </Stack>
 
           <Box

@@ -77,6 +77,7 @@ export const LockersPage = () => {
   const detailDrawer = useDisclosure()
   const swapModal = useDisclosure()
   const [swapStep, setSwapStep] = useState<'confirm' | 'return'>('confirm')
+  const [swapReturnStep, setSwapReturnStep] = useState<'photo' | 'password'>('photo')
   const [swapTarget, setSwapTarget] = useState<Cabinet | null>(null)
   const [swapFile, setSwapFile] = useState<File | null>(null)
   const [swapPreviewUrl, setSwapPreviewUrl] = useState<string | null>(null)
@@ -375,6 +376,7 @@ export const LockersPage = () => {
     setSwapCheckFailures(0)
     setSwapCheckError(null)
     setSwapCameraError(null)
+    setSwapReturnStep('photo')
     setSwapStep('confirm')
     setSwapTarget(null)
     handleSwapStopCamera()
@@ -392,6 +394,7 @@ export const LockersPage = () => {
     if (!swapTarget) return
     reserveMutation.mutate(swapTarget.visibleNum, {
       onSuccess: () => {
+        setSwapReturnStep('photo')
         setSwapStep('return')
       },
     })
@@ -423,14 +426,18 @@ export const LockersPage = () => {
       onSuccess: () => {
         setSwapCheckPassed(true)
         handleSwapStopCamera()
-        setSwapStep('return')
+        setSwapReturnStep('password')
       },
       onError: () => {
         setSwapCheckPassed(false)
         setSwapCheckFailures((prev) => {
           const next = prev + 1
           const remaining = Math.max(0, 2 - next)
-          setSwapCheckError(`관리자 수동 반납 신청 버튼 활성화까지 ${remaining}회 남았습니다`)
+          if (remaining === 0) {
+            setSwapCheckError('수동 반납 신청 버튼이 활성화 되었습니다.')
+          } else {
+            setSwapCheckError(`수동 반납 신청 버튼 활성화까지 ${remaining}회 남았습니다`)
+          }
           return next
         })
       },
@@ -440,7 +447,7 @@ export const LockersPage = () => {
   const handleSwapManualReturn = () => {
     setSwapForceReturn(true)
     handleSwapStopCamera()
-    setSwapStep('return')
+    setSwapReturnStep('password')
   }
 
   function handleSwapStopCamera() {
@@ -546,7 +553,7 @@ export const LockersPage = () => {
     })
     setSwapCheckPassed(false)
     setSwapCheckError(null)
-    setSwapStep('return')
+    setSwapReturnStep('photo')
     handleSwapStopCamera()
     await handleSwapStartCamera()
   }
@@ -913,146 +920,156 @@ export const LockersPage = () => {
             ) : (
               <Stack spacing={4}>
                 <HStack spacing={3}>
-                  <Badge colorScheme="gray">1</Badge>
-                  <Text fontWeight="medium">예약 완료</Text>
+                  <Badge colorScheme={swapReturnStep === 'photo' ? 'green' : 'gray'}>1</Badge>
+                  <Text fontWeight={swapReturnStep === 'photo' ? 'bold' : 'medium'}>사진 검증</Text>
                   <Divider />
-                  <Badge colorScheme="green">2</Badge>
-                  <Text fontWeight="bold">반납 진행</Text>
+                  <Badge colorScheme={swapReturnStep === 'password' ? 'green' : 'gray'}>2</Badge>
+                  <Text fontWeight={swapReturnStep === 'password' ? 'bold' : 'medium'}>
+                    비밀번호 입력
+                  </Text>
                 </HStack>
-                <Text fontSize="sm" color={mutedText}>
-                  카메라로 비어있는 사물함 내부를 찍어주세요. 사진 검증 후 비밀번호를 입력하면
-                  이사가 완료됩니다.
-                </Text>
-                <FormControl>
-                  <FormLabel>사물함 내부 사진</FormLabel>
-                  <Stack spacing={2} mb={2} align="flex-start">
-                    {!swapPreviewUrl && (
-                      <Button
-                        size="sm"
-                        onClick={swapCameraActive ? handleSwapStopCamera : handleSwapStartCamera}
-                        isLoading={swapCameraStarting}
-                      >
-                        {swapCameraActive ? '카메라 끄기' : '카메라 켜기'}
-                      </Button>
-                    )}
-                    {swapCameraError && (
-                      <Text fontSize="sm" color="red.400">
-                        {swapCameraError}
-                      </Text>
-                    )}
-                    {swapCameraActive && !swapPreviewUrl && (
-                      <Stack spacing={2} w="full">
-                        <Box
-                          borderWidth={1}
-                          borderColor={borderColor}
-                          borderRadius="md"
-                          overflow="hidden"
-                          bg="black"
-                          minH="220px"
-                          sx={{ aspectRatio: '16 / 9' }}
-                        >
-                          <video
-                            ref={swapVideoRef}
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              display: 'block',
-                              objectFit: 'cover',
-                            }}
-                            playsInline
-                            muted
-                            autoPlay
-                            onLoadedMetadata={() => {
-                              swapCameraReadyRef.current = true
-                              setSwapCameraReady(true)
-                              if (swapCameraTimeoutRef.current) {
-                                clearTimeout(swapCameraTimeoutRef.current)
-                                swapCameraTimeoutRef.current = null
-                              }
-                            }}
-                            onCanPlay={() => {
-                              swapCameraReadyRef.current = true
-                              setSwapCameraReady(true)
-                              if (swapCameraTimeoutRef.current) {
-                                clearTimeout(swapCameraTimeoutRef.current)
-                                swapCameraTimeoutRef.current = null
-                              }
-                            }}
-                          />
-                        </Box>
-                        <Button
-                          size="sm"
-                          colorScheme="brand"
-                          onClick={handleSwapCapture}
-                          isDisabled={!swapCameraReady}
-                        >
-                          {swapCameraReady ? '사진 찍기' : '카메라 준비 중...'}
-                        </Button>
+                {swapReturnStep === 'photo' && (
+                  <Stack spacing={4}>
+                    <Text fontSize="sm" color={mutedText}>
+                      카메라로 비어있는 사물함 내부를 찍어주세요. 사진 검증을 통과하면 다음 단계로
+                      넘어갑니다.
+                    </Text>
+                    <FormControl>
+                      <FormLabel>사물함 내부 사진</FormLabel>
+                      <Stack spacing={2} mb={2} align="flex-start">
+                        {!swapPreviewUrl && (
+                          <Button
+                            size="sm"
+                            onClick={swapCameraActive ? handleSwapStopCamera : handleSwapStartCamera}
+                            isLoading={swapCameraStarting}
+                          >
+                            {swapCameraActive ? '카메라 끄기' : '카메라 켜기'}
+                          </Button>
+                        )}
+                        {swapCameraError && (
+                          <Text fontSize="sm" color="red.400">
+                            {swapCameraError}
+                          </Text>
+                        )}
+                        {swapCameraActive && !swapPreviewUrl && (
+                          <Stack spacing={2} w="full">
+                            <Box
+                              borderWidth={1}
+                              borderColor={borderColor}
+                              borderRadius="md"
+                              overflow="hidden"
+                              bg="black"
+                              minH="220px"
+                              sx={{ aspectRatio: '16 / 9' }}
+                            >
+                              <video
+                                ref={swapVideoRef}
+                                style={{
+                                  width: '100%',
+                                  height: '100%',
+                                  display: 'block',
+                                  objectFit: 'cover',
+                                }}
+                                playsInline
+                                muted
+                                autoPlay
+                                onLoadedMetadata={() => {
+                                  swapCameraReadyRef.current = true
+                                  setSwapCameraReady(true)
+                                  if (swapCameraTimeoutRef.current) {
+                                    clearTimeout(swapCameraTimeoutRef.current)
+                                    swapCameraTimeoutRef.current = null
+                                  }
+                                }}
+                                onCanPlay={() => {
+                                  swapCameraReadyRef.current = true
+                                  setSwapCameraReady(true)
+                                  if (swapCameraTimeoutRef.current) {
+                                    clearTimeout(swapCameraTimeoutRef.current)
+                                    swapCameraTimeoutRef.current = null
+                                  }
+                                }}
+                              />
+                            </Box>
+                            <HStack>
+                              <Button
+                                size="sm"
+                                colorScheme="brand"
+                                onClick={handleSwapCapture}
+                                isDisabled={!swapCameraReady}
+                              >
+                                {swapCameraReady ? '사진 찍기' : '카메라 준비 중...'}
+                              </Button>
+                            </HStack>
+                          </Stack>
+                        )}
                       </Stack>
-                    )}
+                      {swapPreviewUrl && (
+                        <Stack spacing={2} mb={2}>
+                          <Box
+                            borderWidth={1}
+                            borderColor={borderColor}
+                            borderRadius="md"
+                            overflow="hidden"
+                            bg="blackAlpha.200"
+                          >
+                            <img
+                              src={swapPreviewUrl}
+                              alt="이사 촬영 미리보기"
+                              style={{ width: '100%', maxHeight: '40vh', objectFit: 'contain' }}
+                            />
+                          </Box>
+                          <Text fontSize="sm" color={mutedText}>
+                            선택됨: {swapFile?.name}
+                          </Text>
+                          <Button size="sm" variant="outline" onClick={handleSwapRetake}>
+                            다시 찍기
+                          </Button>
+                          <Button
+                            size="sm"
+                            colorScheme="brand"
+                            onClick={handleSwapCheckImage}
+                            isDisabled={!swapFile || swapCheckFailures >= 2}
+                            isLoading={checkImageMutation.isPending}
+                          >
+                            다음 (AI 검증)
+                          </Button>
+                          {swapCheckError && (
+                            <Text fontSize="sm" color="red.400">
+                              {swapCheckError}
+                            </Text>
+                          )}
+                          {swapCheckFailures >= 2 && (
+                            <Button size="sm" variant="outline" colorScheme="orange" onClick={handleSwapManualReturn}>
+                              수동 반납 신청
+                            </Button>
+                          )}
+                        </Stack>
+                      )}
+                    </FormControl>
                   </Stack>
-                  {swapPreviewUrl && (
-                    <Stack spacing={2} mb={2}>
-                      <Box
-                        borderWidth={1}
-                        borderColor={borderColor}
-                        borderRadius="md"
-                        overflow="hidden"
-                        bg="blackAlpha.200"
-                      >
-                        <img
-                          src={swapPreviewUrl}
-                          alt="이사 촬영 미리보기"
-                          style={{ width: '100%', maxHeight: '40vh', objectFit: 'contain' }}
-                        />
-                      </Box>
-                      <Text fontSize="sm" color={mutedText}>
-                        선택됨: {swapFile?.name}
-                      </Text>
-                      <Button size="sm" variant="outline" onClick={handleSwapRetake}>
-                        다시 찍기
-                      </Button>
-                      <Button
-                        size="sm"
-                        colorScheme="brand"
-                        onClick={handleSwapCheckImage}
-                        isDisabled={!swapFile}
-                        isLoading={checkImageMutation.isPending}
-                      >
-                        다음 (AI 검증)
-                      </Button>
-                      {swapCheckError && (
-                        <Text fontSize="sm" color="red.400">
-                          {swapCheckError}
-                        </Text>
-                      )}
-                      {swapCheckPassed && (
-                        <Text fontSize="sm" color="green.500">
-                          ✅ AI 검증 통과! 비밀번호를 입력해 주세요.
-                        </Text>
-                      )}
-                      {swapCheckFailures >= 2 && (
-                        <Button size="sm" variant="outline" colorScheme="orange" onClick={handleSwapManualReturn}>
-                          수동 반납 신청
-                        </Button>
-                      )}
-                    </Stack>
-                  )}
-                </FormControl>
-
-                {(swapCheckPassed || swapCheckFailures >= 2 || swapForceReturn) && (
-                  <>
+                )}
+                {swapReturnStep === 'password' && (
+                  <Stack spacing={4}>
+                    <Text fontSize="sm" color={mutedText}>
+                      사진 확인이 완료되었습니다. 비밀번호를 입력하고 이사를 완료하세요.
+                    </Text>
                     <FormControl>
                       <FormLabel>이전 비밀번호 (4자리)</FormLabel>
                       <Input
-                        type="text"
+                        type="tel"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         maxLength={4}
                         value={swapPassword}
-                        onChange={(event) => setSwapPassword(event.target.value)}
+                        onChange={(event) => {
+                          const onlyDigits = event.target.value.replace(/\D/g, '')
+                          setSwapPassword(onlyDigits.slice(0, 4))
+                        }}
                       />
                     </FormControl>
 
-                    {(swapForceReturn || swapCheckFailures >= 2) && (
+                    {swapForceReturn && (
                       <FormControl>
                         <FormLabel>수동 반납 사유</FormLabel>
                         <Textarea
@@ -1062,7 +1079,7 @@ export const LockersPage = () => {
                         />
                       </FormControl>
                     )}
-                  </>
+                  </Stack>
                 )}
               </Stack>
             )}
@@ -1081,18 +1098,20 @@ export const LockersPage = () => {
                 이사 예약하기
               </Button>
             ) : (
-              <Button
-                colorScheme="brand"
-                onClick={handleSwapSubmit}
-                isLoading={swapMutation.isPending}
-                isDisabled={
-                  !swapFile ||
-                  swapPassword.trim().length !== 4 ||
-                  (!swapCheckPassed && swapCheckFailures < 2 && !swapForceReturn)
-                }
-              >
-                이사하기
-              </Button>
+              swapReturnStep === 'password' && (
+                <Button
+                  colorScheme="brand"
+                  onClick={handleSwapSubmit}
+                  isLoading={swapMutation.isPending}
+                  isDisabled={
+                    !swapFile ||
+                    swapPassword.trim().length !== 4 ||
+                    (!swapCheckPassed && !swapForceReturn)
+                  }
+                >
+                  이사하기
+                </Button>
+              )
             )}
           </ModalFooter>
         </ModalContent>
