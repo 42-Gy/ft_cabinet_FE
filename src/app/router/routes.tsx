@@ -12,6 +12,7 @@ import { AuthCallbackPage } from '@/app/routes/AuthCallbackPage'
 import { LoginPage } from '@/app/routes/LoginPage'
 import { MaintenancePage } from '@/app/routes/MaintenancePage'
 import { SocialLinkCallbackPage } from '@/app/routes/SocialLinkCallbackPage'
+import { WatermelonEventGate } from '@/app/routes/WatermelonEventGate'
 
 export const appRoutes: RouteObject[] = [
   {
@@ -20,6 +21,7 @@ export const appRoutes: RouteObject[] = [
     children: [
       { index: true, element: <HomePage /> },
       { path: 'admin', element: <AdminGate /> },
+      { path: 'event', element: <WatermelonEventGate /> },
       { path: 'lockers', element: <LockersPage /> },
       { path: 'my/lockers', element: <MyLockersPage /> },
       { path: 'store', element: <StorePage /> },

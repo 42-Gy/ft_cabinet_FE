@@ -21,6 +21,7 @@ import { env } from '@/libs/env'
 
 const routes = [
   { to: '/admin', label: '관리자', requiresAdmin: true },
+  { to: '/event', label: '이벤트', requiresAdmin: true },
   { to: '/lockers', label: '사물함' },
   { to: '/my/lockers', label: '내 사물함' },
   { to: '/attendance', label: '출석' },

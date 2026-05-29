@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
+  <defs><filter id="g"><feGaussianBlur stdDeviation="10"/><feColorMatrix values="1 0 0 0 .28 0 1 0 0 .78 0 0 1 0 1 0 0 0 1 0"/></filter><filter id="s"><feDropShadow dx="0" dy="10" stdDeviation="6" flood-color="#000" flood-opacity=".28"/></filter></defs>
+  <rect x="36" y="10" width="88" height="30" rx="15" fill="#fff" stroke="#e2e8f0"/>
+  <text x="80" y="31" text-anchor="middle" font-size="18" font-weight="800" font-family="sans-serif">9단계</text>
+  <g opacity="1" filter="url(#g)"><circle cx="80" cy="104" r="61" fill="#7dd3fc"/></g>
+  <g fill="#b5f0ff"><path d="M21 70l8 15 16 5-16 5-8 16-8-16-16-5 16-5z"/><path d="M138 63l7 14 15 5-15 5-7 15-7-15-15-5 15-5z"/><path d="M108 46l5 10 10 4-10 4-5 10-5-10-10-4 10-4z"/></g>
+  <g filter="url(#s)" transform="translate(0 12)">
+    <path d="M32 112 C45 74 62 50 80 45 C98 50 115 74 128 112 C100 128 60 128 32 112Z" fill="#1d8ec6"/>
+    <path d="M39 105 C51 74 65 56 80 52 C95 56 109 74 121 105 C98 118 62 118 39 105Z" fill="#f7f3dc"/>
+    <path d="M48 97 C58 72 69 61 80 58 C91 61 102 72 112 97 C92 107 68 107 48 97Z" fill="#ff4f5f"/>
+    <path d="M80 58 L83 100" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".9"/>
+    <g fill="#1d1d1f"><circle cx="68" cy="78" r="3"/><circle cx="91" cy="82" r="3"/><circle cx="76" cy="94" r="3"/><circle cx="101" cy="96" r="3"/></g>
+  </g>
+</svg>
