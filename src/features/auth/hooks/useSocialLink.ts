@@ -4,8 +4,8 @@ import axios from 'axios'
 import {
   getOAuthProviderLabel,
   linkSocialAccount,
-  type LinkProvider,
 } from '@/features/auth/api/socialAuth'
+import type { LinkProvider } from '@/features/auth/types'
 import { meQueryKeys } from '@/features/users/hooks/useMeQuery'
 
 const defaultErrorMessage = '소셜 계정 연동 중 문제가 발생했습니다.'
@@ -39,4 +39,3 @@ export const useSocialLinkMutation = () => {
     },
   })
 }
-

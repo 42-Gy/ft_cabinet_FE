@@ -59,6 +59,8 @@ npm run dev            # http://localhost:5173
 | `VITE_SERVICE_NAME`                              | 헤더 로고와 Hero에 표시되는 서비스명 (기본 SUBAK)    |
 | `VITE_API_BASE_URL`                              | 인증이 필요한 `/v4/*` API의 기본 URL                 |
 | `VITE_AUTH_BASE_URL`                             | OAuth 리다이렉트 Origin (`/oauth2/authorization/42`) |
+| `VITE_KAKAO_OAUTH_CLIENT_ID`                     | 카카오 계정 연동용 REST API 키                       |
+| `VITE_GOOGLE_OAUTH_CLIENT_ID`                    | 구글 계정 연동용 OAuth Client ID                     |
 | `VITE_POLICY_EMAIL` / `VITE_POLICY_CONTACT`      | 정책 페이지에 노출될 연락처                          |
 | `VITE_POLICY_UPDATED_AT` / `VITE_POLICY_SUMMARY` | 정책 정보                                            |
 | `VITE_USE_MOCK`                                  | `false`여야 실제 API 계층 사용                       |

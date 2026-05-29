@@ -11,7 +11,8 @@ import {
 import { Navigate } from 'react-router-dom'
 import { Si42, SiGoogle, SiKakao } from 'react-icons/si'
 import { useAuthSession } from '@/features/auth/hooks/useAuthSession'
-import { startOAuthLogin, type OAuthProvider } from '@/features/auth/api/socialAuth'
+import { useStartOAuthLogin } from '@/features/auth/hooks/useStartOAuthLogin'
+import type { OAuthProvider } from '@/features/auth/types'
 
 const loginOptions: Array<{
   provider: OAuthProvider
@@ -45,6 +46,7 @@ const loginOptions: Array<{
 
 export const LoginPage = () => {
   const { isAuthenticated } = useAuthSession()
+  const startOAuthLogin = useStartOAuthLogin()
   const cardBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200')
   const textMuted = useColorModeValue('gray.600', 'gray.300')
@@ -99,4 +101,3 @@ export const LoginPage = () => {
     </Stack>
   )
 }
-

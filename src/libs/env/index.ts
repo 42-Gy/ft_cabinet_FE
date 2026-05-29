@@ -11,6 +11,8 @@ const fallback = {
   policyUpdatedAt: '2025-01-26',
   policySummary:
     '사물함은 1인 1개만 대여 가능하며, 장기 미사용 시 자동 회수됩니다. 파손/분실 시 즉시 운영진에게 보고해 주세요.',
+  kakaoOAuthClientId: '',
+  googleOAuthClientId: '',
 }
 
 export const env = {
@@ -20,6 +22,8 @@ export const env = {
   policyContact: import.meta.env.VITE_POLICY_CONTACT ?? fallback.policyContact,
   policyUpdatedAt: import.meta.env.VITE_POLICY_UPDATED_AT ?? fallback.policyUpdatedAt,
   policySummary: import.meta.env.VITE_POLICY_SUMMARY ?? fallback.policySummary,
+  kakaoOAuthClientId: import.meta.env.VITE_KAKAO_OAUTH_CLIENT_ID ?? fallback.kakaoOAuthClientId,
+  googleOAuthClientId: import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID ?? fallback.googleOAuthClientId,
   useMockApi: booleanFromEnv(import.meta.env.VITE_USE_MOCK, import.meta.env.DEV),
   serviceName: import.meta.env.VITE_SERVICE_NAME ?? 'SUBAK',
 }

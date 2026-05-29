@@ -4,7 +4,8 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ErrorState } from '@/components/molecules/ErrorState'
 import { LoadingState } from '@/components/molecules/LoadingState'
 import { useSocialLinkMutation } from '@/features/auth/hooks/useSocialLink'
-import type { LinkProvider } from '@/features/auth/api/socialAuth'
+import type { LinkProvider } from '@/features/auth/types'
+import { consumeOAuthLinkState } from '@/features/auth/utils/socialLinkState'
 
 const isLinkProvider = (value: string | undefined): value is LinkProvider =>
   value === 'kakao' || value === 'google'
@@ -21,25 +22,33 @@ export const SocialLinkCallbackPage = () => {
     if (requestedRef.current) return
     requestedRef.current = true
 
-    const error = searchParams.get('error')
-    if (error) {
-      setErrorMessage(error)
-      return
+    const completeSocialLink = async () => {
+      const error = searchParams.get('error')
+      if (error) {
+        setErrorMessage(error)
+        return
+      }
+
+      const authorizationCode = searchParams.get('code')
+      if (!isLinkProvider(provider) || !authorizationCode) {
+        setErrorMessage('소셜 계정 연동 정보를 확인하지 못했습니다.')
+        return
+      }
+      if (!consumeOAuthLinkState(provider, searchParams.get('state'))) {
+        setErrorMessage('소셜 계정 연동 요청을 확인하지 못했습니다. 다시 시도해 주세요.')
+        return
+      }
+
+      linkMutation.mutate(
+        { provider, authorizationCode },
+        {
+          onSuccess: () => navigate('/my/lockers', { replace: true }),
+          onError: () => setErrorMessage('소셜 계정 연동에 실패했습니다. 다시 시도해 주세요.'),
+        },
+      )
     }
 
-    const authorizationCode = searchParams.get('code')
-    if (!isLinkProvider(provider) || !authorizationCode) {
-      setErrorMessage('소셜 계정 연동 정보를 확인하지 못했습니다.')
-      return
-    }
-
-    linkMutation.mutate(
-      { provider, authorizationCode },
-      {
-        onSuccess: () => navigate('/my/lockers', { replace: true }),
-        onError: () => setErrorMessage('소셜 계정 연동에 실패했습니다. 다시 시도해 주세요.'),
-      },
-    )
+    completeSocialLink()
   }, [linkMutation, navigate, provider, searchParams])
 
   if (!errorMessage) {

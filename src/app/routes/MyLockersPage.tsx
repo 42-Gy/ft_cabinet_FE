@@ -28,7 +28,7 @@ import { EmptyState } from '@/components/molecules/EmptyState'
 import { ErrorState } from '@/components/molecules/ErrorState'
 import { LoadingState } from '@/components/molecules/LoadingState'
 import { PageHeader } from '@/components/molecules/PageHeader'
-import { startOAuthLink } from '@/features/auth/api/socialAuth'
+import { useStartSocialLink } from '@/features/auth/hooks/useStartSocialLink'
 import {
   useAutoExtensionMutation,
   useCheckReturnImageMutation,
@@ -70,6 +70,7 @@ export const MyLockersPage = () => {
   const cameraReadyRef = useRef(false)
   const cameraTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const navigate = useNavigate()
+  const startSocialLink = useStartSocialLink()
 
   const cardBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200')
@@ -78,6 +79,7 @@ export const MyLockersPage = () => {
   const earnColor = useColorModeValue('leaf.600', 'leaf.300')
   const spendColor = useColorModeValue('red.500', 'red.300')
   const itemPanelHeight = { base: '720px', md: '640px' }
+
   const itemTypeLabels: Record<UserItemType, string> = {
     EXTENSION: '연장권',
     SWAP: '이사권',
@@ -519,7 +521,7 @@ export const MyLockersPage = () => {
                   variant="outline"
                   colorScheme="yellow"
                   leftIcon={<SiKakao />}
-                  onClick={() => startOAuthLink('kakao')}
+                  onClick={() => startSocialLink('kakao')}
                 >
                   카카오 연동
                 </Button>
@@ -528,7 +530,7 @@ export const MyLockersPage = () => {
                   variant="outline"
                   colorScheme="blue"
                   leftIcon={<SiGoogle />}
-                  onClick={() => startOAuthLink('google')}
+                  onClick={() => startSocialLink('google')}
                 >
                   구글 연동
                 </Button>
