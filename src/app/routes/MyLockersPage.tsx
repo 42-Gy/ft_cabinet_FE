@@ -23,10 +23,12 @@ import {
   useDisclosure,
 } from '@chakra-ui/react'
 import { useNavigate } from 'react-router-dom'
+import { SiGoogle, SiKakao } from 'react-icons/si'
 import { EmptyState } from '@/components/molecules/EmptyState'
 import { ErrorState } from '@/components/molecules/ErrorState'
 import { LoadingState } from '@/components/molecules/LoadingState'
 import { PageHeader } from '@/components/molecules/PageHeader'
+import { startOAuthLink } from '@/features/auth/api/socialAuth'
 import {
   useAutoExtensionMutation,
   useCheckReturnImageMutation,
@@ -503,6 +505,35 @@ export const MyLockersPage = () => {
             <Text fontSize="sm" color={textMuted}>
               패널티 일수: {me.penaltyDays ?? 0}일
             </Text>
+            <Divider />
+            <Stack spacing={2}>
+              <Text fontSize="sm" fontWeight="bold">
+                소셜 계정 연동
+              </Text>
+              <Text fontSize="xs" color={textMuted}>
+                42 API 사용이 어려울 때 카카오/구글 계정으로 다시 로그인할 수 있습니다.
+              </Text>
+              <HStack spacing={2} flexWrap="wrap">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  colorScheme="yellow"
+                  leftIcon={<SiKakao />}
+                  onClick={() => startOAuthLink('kakao')}
+                >
+                  카카오 연동
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  colorScheme="blue"
+                  leftIcon={<SiGoogle />}
+                  onClick={() => startOAuthLink('google')}
+                >
+                  구글 연동
+                </Button>
+              </HStack>
+            </Stack>
           </Stack>
 
           <Divider my={6} />

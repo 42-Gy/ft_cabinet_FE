@@ -9,7 +9,9 @@ import { StorePage } from '@/app/routes/StorePage'
 import { NotFoundPage } from '@/app/routes/NotFoundPage'
 import { AdminGate } from '@/app/routes/AdminGate'
 import { AuthCallbackPage } from '@/app/routes/AuthCallbackPage'
+import { LoginPage } from '@/app/routes/LoginPage'
 import { MaintenancePage } from '@/app/routes/MaintenancePage'
+import { SocialLinkCallbackPage } from '@/app/routes/SocialLinkCallbackPage'
 
 export const appRoutes: RouteObject[] = [
   {
@@ -23,7 +25,9 @@ export const appRoutes: RouteObject[] = [
       { path: 'store', element: <StorePage /> },
       { path: 'attendance', element: <AttendancePage /> },
       { path: 'policy', element: <PolicyPage /> },
+      { path: 'login', element: <LoginPage /> },
       { path: 'auth/callback', element: <AuthCallbackPage /> },
+      { path: 'auth/link/callback/:provider', element: <SocialLinkCallbackPage /> },
       { path: 'repair', element: <MaintenancePage /> },
       { path: '*', element: <NotFoundPage /> },
     ],

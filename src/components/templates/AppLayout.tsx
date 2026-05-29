@@ -14,7 +14,7 @@ import {
 } from '@chakra-ui/react'
 import { FiMoon, FiSun } from 'react-icons/fi'
 import { HiOutlineMenu, HiOutlineX } from 'react-icons/hi'
-import { NavLink, Outlet, Link as RouterLink, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, Link as RouterLink, useLocation, useNavigate } from 'react-router-dom'
 import { MaintenancePage } from '@/app/routes/MaintenancePage'
 import { useAuthSession } from '@/features/auth/hooks/useAuthSession'
 import { env } from '@/libs/env'
@@ -32,6 +32,7 @@ export const AppLayout = () => {
   const { isOpen, onToggle, onClose } = useDisclosure()
   const { isAuthenticated, logout, me } = useAuthSession()
   const location = useLocation()
+  const navigate = useNavigate()
   const { colorMode, toggleColorMode } = useColorMode()
   const headerBg = useColorModeValue('white', 'gray.900')
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200')
@@ -42,9 +43,7 @@ export const AppLayout = () => {
   const [isScrolled, setIsScrolled] = useState(false)
 
   const handleLogin = () => {
-    if (typeof window !== 'undefined') {
-      window.location.href = '/oauth2/authorization/42'
-    }
+    navigate('/login')
   }
 
   const isLoggedIn = isAuthenticated

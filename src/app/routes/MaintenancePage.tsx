@@ -1,6 +1,7 @@
 import { keyframes } from '@emotion/react'
 import { Box, Button, Flex, Heading, HStack, Stack, Text, useColorModeValue } from '@chakra-ui/react'
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuthSession } from '@/features/auth/hooks/useAuthSession'
 import { formatKstDateTime, getMaintenanceEndAt } from '@/utils/maintenance'
 
@@ -25,6 +26,7 @@ interface MaintenancePageProps {
 
 export const MaintenancePage = ({ endAt }: MaintenancePageProps) => {
   const { isAuthenticated, logout, me, isLoading } = useAuthSession()
+  const navigate = useNavigate()
   const isAdmin = me?.role === 'ADMIN' || me?.role === 'ROLE_ADMIN' || me?.role === 'MASTER'
   const targetAt = endAt ?? getMaintenanceEndAt()
   const [remainingMs, setRemainingMs] = useState(() => targetAt.getTime() - Date.now())
@@ -48,9 +50,7 @@ export const MaintenancePage = ({ endAt }: MaintenancePageProps) => {
   const shadow = useColorModeValue('0 20px 60px rgba(255, 90, 109, 0.18)', '0 20px 60px rgba(0,0,0,0.45)')
 
   const handleLogin = () => {
-    if (typeof window !== 'undefined') {
-      window.location.href = '/oauth2/authorization/42'
-    }
+    navigate('/login')
   }
 
   useEffect(() => {
