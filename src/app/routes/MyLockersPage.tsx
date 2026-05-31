@@ -30,6 +30,11 @@ import { LoadingState } from '@/components/molecules/LoadingState'
 import { PageHeader } from '@/components/molecules/PageHeader'
 import { useStartSocialLink } from '@/features/auth/hooks/useStartSocialLink'
 import {
+  consumeRecentSocialProviderLinked,
+  isSocialProviderLinked,
+  markSocialProviderLinked,
+} from '@/features/auth/utils/socialLinkStatus'
+import {
   useAutoExtensionMutation,
   useCheckReturnImageMutation,
   useExtendTicketMutation,
@@ -71,6 +76,7 @@ export const MyLockersPage = () => {
   const cameraTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const navigate = useNavigate()
   const startSocialLink = useStartSocialLink()
+  const [, setSocialLinkStatusVersion] = useState(0)
 
   const cardBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200')
@@ -192,6 +198,14 @@ export const MyLockersPage = () => {
   }, [myItems])
 
   useEffect(() => {
+    if (!me?.userId) return
+    const provider = consumeRecentSocialProviderLinked()
+    if (!provider) return
+    markSocialProviderLinked(me.userId, provider)
+    setSocialLinkStatusVersion((version) => version + 1)
+  }, [me?.userId])
+
+  useEffect(() => {
     if (typeof me?.autoExtensionEnabled === 'boolean') {
       setAutoExtensionEnabled(me.autoExtensionEnabled)
     }
@@ -248,6 +262,8 @@ export const MyLockersPage = () => {
     )
   }
 
+  const kakaoLinked = isSocialProviderLinked(me, 'kakao')
+  const googleLinked = isSocialProviderLinked(me, 'google')
   const hasLocker = Boolean(me.lentCabinetId)
 
   const getCount = (type: UserItemType) => itemCounts[type] ?? 0
@@ -519,20 +535,22 @@ export const MyLockersPage = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  colorScheme="yellow"
+                  colorScheme={kakaoLinked ? 'green' : 'yellow'}
                   leftIcon={<SiKakao />}
                   onClick={() => startSocialLink('kakao')}
+                  isDisabled={kakaoLinked}
                 >
-                  카카오 연동
+                  {kakaoLinked ? '카카오 연동 완료' : '카카오 연동'}
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  colorScheme="blue"
+                  colorScheme={googleLinked ? 'green' : 'blue'}
                   leftIcon={<SiGoogle />}
                   onClick={() => startSocialLink('google')}
+                  isDisabled={googleLinked}
                 >
-                  구글 연동
+                  {googleLinked ? '구글 연동 완료' : '구글 연동'}
                 </Button>
               </HStack>
             </Stack>

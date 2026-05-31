@@ -6,7 +6,12 @@ import {
   linkSocialAccount,
 } from '@/features/auth/api/socialAuth'
 import type { LinkProvider } from '@/features/auth/types'
+import {
+  markRecentSocialProviderLinked,
+  markSocialProviderLinked,
+} from '@/features/auth/utils/socialLinkStatus'
 import { meQueryKeys } from '@/features/users/hooks/useMeQuery'
+import type { UserProfile } from '@/types/user'
 
 const defaultErrorMessage = '소셜 계정 연동 중 문제가 발생했습니다.'
 
@@ -28,6 +33,9 @@ export const useSocialLinkMutation = () => {
   return useMutation<string, unknown, { provider: LinkProvider; authorizationCode: string }>({
     mutationFn: ({ provider, authorizationCode }) => linkSocialAccount(provider, authorizationCode),
     onSuccess: (message, variables) => {
+      const me = queryClient.getQueryData<UserProfile | null>(meQueryKeys.root)
+      markSocialProviderLinked(me?.userId, variables.provider)
+      markRecentSocialProviderLinked(variables.provider)
       queryClient.invalidateQueries({ queryKey: meQueryKeys.root })
       toast({
         description: message || `${getOAuthProviderLabel(variables.provider)} 계정 연동이 완료되었습니다.`,
