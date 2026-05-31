@@ -47,25 +47,25 @@ const shopItems: Array<{
   {
     key: 'DROP_PROTECTION',
     title: '하락 방지권',
-    description: '하락 결과를 유지로 바꿉니다.',
+    description: '하락 무효',
     icon: '🍀',
   },
   {
     key: 'DESTROY_PROTECTION',
     title: '파괴 방지권',
-    description: '파괴 결과를 방지합니다.',
+    description: '파괴 대신 -2강',
     icon: '🛡️',
   },
   {
     key: 'PREMIUM_FERTILIZER',
     title: '프리미엄 비료',
-    description: '성공 확률을 높입니다.',
+    description: '성공 확률 +5% (비료는 한 개만 사용 가능)',
     icon: '🌈',
   },
   {
     key: 'DANGEROUS_FERTILIZER',
     title: '위험한 비료',
-    description: '성공과 파괴 확률이 함께 증가합니다.',
+    description: '성공 +10%, 파괴 +10% (7강 이후 사용 불가)',
     icon: '💀',
   },
 ]
@@ -183,11 +183,14 @@ export const WatermelonEventPage = () => {
   const maxLevel = config.maxLevel ?? 10
   const isMaxLevel = me.currentLevel >= maxLevel
   const enhanceCost = getCurrentCost(config, me.currentLevel)
-  const selectedItemCost = shopItems.reduce((sum, item) => {
-    if (!selectedItems[item.key]) return sum
-    return sum + (config.itemPrices[item.key] ?? 0)
-  }, 0)
-  const totalCost = enhanceCost + selectedItemCost
+  const totalCost = enhanceCost
+  const getItemCount = (item: EventShopItem) => Number(me[itemCountKeys[item]] ?? 0)
+  const selectedItemsUsable = shopItems.every((item) => {
+    if (!selectedItems[item.key]) return true
+    if (getItemCount(item.key) <= 0) return false
+    if (item.key === 'DANGEROUS_FERTILIZER' && me.currentLevel >= 7) return false
+    return true
+  })
 
   const probabilities = {
     success: config.successRates[me.currentLevel],
@@ -200,11 +203,11 @@ export const WatermelonEventPage = () => {
     !isMaxLevel &&
     !enhanceMutation.isPending &&
     animationState !== 'ENHANCING' &&
+    selectedItemsUsable &&
     me.seedBalance >= totalCost
 
-  const getItemCount = (item: EventShopItem) => Number(me[itemCountKeys[item]] ?? 0)
-
   const isItemDisabled = (item: EventShopItem) => {
+    if (selectedItems[item]) return false
     if (getItemCount(item) <= 0) return true
     if (item === 'DANGEROUS_FERTILIZER' && me.currentLevel >= 7) return true
     return false
@@ -230,6 +233,10 @@ export const WatermelonEventPage = () => {
     }
     if (selectedItems.PREMIUM_FERTILIZER && selectedItems.DANGEROUS_FERTILIZER) {
       toast({ description: '프리미엄 비료와 위험한 비료는 동시에 사용할 수 없습니다.', status: 'error' })
+      return
+    }
+    if (!selectedItemsUsable) {
+      toast({ description: '사용할 수 없는 아이템 선택을 해제해 주세요.', status: 'error' })
       return
     }
     if (me.seedBalance < totalCost) {
@@ -396,7 +403,10 @@ export const WatermelonEventPage = () => {
                             {item.icon} {item.title}
                           </Text>
                           <Text fontSize="xs" color={textMuted}>
-                            보유 {getItemCount(item.key)}개 · {Number(config.itemPrices[item.key] ?? 0).toLocaleString()}
+                            {item.description}
+                          </Text>
+                          <Text fontSize="xs" color={textMuted}>
+                            보유 {getItemCount(item.key)}개 · 사용 시 추가 비용 없음
                           </Text>
                         </Stack>
                       </Checkbox>
@@ -404,7 +414,7 @@ export const WatermelonEventPage = () => {
                   </SimpleGrid>
                   <HStack justify="space-between" flexWrap="wrap" gap={3}>
                     <Text fontSize="sm" color={textMuted}>
-                      예상 총 비용: {totalCost.toLocaleString()} 수박씨
+                      강화 비용: {totalCost.toLocaleString()} 수박씨
                     </Text>
                     <Button
                       size="lg"
