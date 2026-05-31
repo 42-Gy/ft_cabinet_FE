@@ -57,11 +57,22 @@ export const startOAuthLink = (provider: LinkProvider) => {
   const state = createOAuthState()
   const url = createOAuthLinkUrl(provider, redirectUri, state)
 
+  console.info('[SocialLink] start', {
+    provider,
+    redirectUri,
+    clientIdConfigured: Boolean(getOAuthLinkClientId(provider)),
+    authorizationHost: url.host,
+  })
+
   saveOAuthLinkState(provider, state)
   window.location.href = url.toString()
 }
 
 export const linkSocialAccount = async (provider: LinkProvider, authorizationCode: string) => {
+  console.info('[SocialLink] submit', {
+    provider,
+    hasAuthorizationCode: Boolean(authorizationCode),
+  })
   const { data } = await apiClient.post(`/v4/auth/link/${provider}`, {
     authorizationCode,
   })

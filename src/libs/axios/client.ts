@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosHeaders, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
+import { tokenStore } from '@/libs/auth/tokenStore'
 import { env } from '@/libs/env'
 
 export const apiClient = axios.create({
@@ -25,6 +26,10 @@ const reissueClient = axios.create({
 
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const headers = AxiosHeaders.from(config.headers ?? {})
+  const token = tokenStore.get()
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
   if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
     headers.delete('Content-Type')
   } else if (!headers.has('Content-Type')) {
@@ -47,7 +52,6 @@ const enqueueRefresh = () => {
       .then(() => true)
       .catch((error) => {
         if (import.meta.env.DEV) {
-          // eslint-disable-next-line no-console
           console.error('[API] token refresh failed', error)
         }
         if (typeof window !== 'undefined') {
@@ -81,7 +85,6 @@ apiClient.interceptors.response.use(
     }
 
     if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
       console.error('[API]', error)
     }
     return Promise.reject(error)

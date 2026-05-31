@@ -30,6 +30,11 @@ export const SocialLinkCallbackPage = () => {
       }
 
       const authorizationCode = searchParams.get('code')
+      console.info('[SocialLink] callback', {
+        provider,
+        hasAuthorizationCode: Boolean(authorizationCode),
+        hasState: Boolean(searchParams.get('state')),
+      })
       if (!isLinkProvider(provider) || !authorizationCode) {
         setErrorMessage('소셜 계정 연동 정보를 확인하지 못했습니다.')
         return

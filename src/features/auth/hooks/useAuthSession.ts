@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
+import { tokenStore } from '@/libs/auth/tokenStore'
 import { apiClient } from '@/libs/axios/client'
 import { meQueryKeys, useMeQuery } from '@/features/users/hooks/useMeQuery'
 
@@ -20,6 +21,7 @@ export const useAuthSession = () => {
     } catch {
       // ignore logout failures
     } finally {
+      tokenStore.clear()
       queryClient.setQueryData(meQueryKeys.root, null)
       queryClient.invalidateQueries({ queryKey: meQueryKeys.root })
       if (typeof window !== 'undefined') {
