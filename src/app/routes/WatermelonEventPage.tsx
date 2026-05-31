@@ -593,6 +593,7 @@ const EventLogPanel = ({
   logs: Array<{
     id: number
     userId: number
+    userName?: string
     beforeLevel: number
     afterLevel: number
     finalOutcome: EnhanceOutcome
@@ -621,7 +622,7 @@ const EventLogPanel = ({
                   <HStack>
                     <Badge colorScheme={outcomeSchemes[log.finalOutcome]}>{outcomeLabels[log.finalOutcome]}</Badge>
                     <Text fontSize="sm" fontWeight="bold">
-                      user #{log.userId}
+                      {log.userName || `user #${log.userId}`}
                     </Text>
                   </HStack>
                   <Text fontSize="sm" color={textMuted}>

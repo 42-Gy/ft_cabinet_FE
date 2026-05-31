@@ -80,6 +80,7 @@ export interface RankingPage {
 export interface EnhanceLog {
   id: number
   userId: number
+  userName?: string
   beforeLevel: number
   afterLevel: number
   usedPremiumFertilizer: boolean
@@ -109,4 +110,3 @@ export type EnhanceAnimationState =
   | 'MAINTAIN'
   | 'DROP'
   | 'DESTROY'
-
