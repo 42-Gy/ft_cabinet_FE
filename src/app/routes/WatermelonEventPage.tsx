@@ -77,6 +77,8 @@ const itemCountKeys: Record<EventShopItem, keyof WatermelonEventMe> = {
   DANGEROUS_FERTILIZER: 'dangerousFertilizerCount',
 }
 
+const fertilizerItems: EventShopItem[] = ['PREMIUM_FERTILIZER', 'DANGEROUS_FERTILIZER']
+
 const outcomeLabels: Record<EnhanceOutcome, string> = {
   SUCCESS: '성공',
   MAINTAIN: '유지',
@@ -186,12 +188,13 @@ export const WatermelonEventPage = () => {
   const totalCost = enhanceCost
   const getItemCount = (item: EventShopItem) => Number(me[itemCountKeys[item]] ?? 0)
   const selectedItemCount = shopItems.filter((item) => selectedItems[item.key]).length
+  const selectedFertilizerCount = fertilizerItems.filter((item) => selectedItems[item]).length
   const selectedItemsUsable = shopItems.every((item) => {
     if (!selectedItems[item.key]) return true
     if (getItemCount(item.key) <= 0) return false
-    if (item.key === 'DANGEROUS_FERTILIZER' && me.currentLevel >= 7) return false
+    if (fertilizerItems.includes(item.key) && me.currentLevel >= 7) return false
     return true
-  })
+  }) && selectedItemCount <= 2 && selectedFertilizerCount <= 1
 
   const probabilities = {
     success: config.successRates[me.currentLevel],
@@ -210,15 +213,34 @@ export const WatermelonEventPage = () => {
   const isItemDisabled = (item: EventShopItem) => {
     if (selectedItems[item]) return false
     if (getItemCount(item) <= 0) return true
-    if (item === 'DANGEROUS_FERTILIZER' && me.currentLevel >= 7) return true
+    if (selectedItemCount >= 2) return true
+    if (fertilizerItems.includes(item) && me.currentLevel >= 7) return true
+    if (fertilizerItems.includes(item) && selectedFertilizerCount >= 1) return true
     return false
   }
 
   const toggleItem = (item: EventShopItem, checked: boolean) => {
     setSelectedItems((prev) => {
+      if (!checked) return { ...prev, [item]: false }
+
+      const currentSelectedCount = shopItems.filter((shopItem) => prev[shopItem.key]).length
+      if (!prev[item] && currentSelectedCount >= 2) {
+        toast({ description: '아이템은 한 번에 최대 2개까지 사용할 수 있습니다.', status: 'error' })
+        return prev
+      }
+      if (fertilizerItems.includes(item) && me.currentLevel >= 7) {
+        toast({ description: '7강 이후에는 비료를 사용할 수 없습니다.', status: 'error' })
+        return prev
+      }
+      if (
+        fertilizerItems.includes(item) &&
+        fertilizerItems.some((fertilizerItem) => fertilizerItem !== item && prev[fertilizerItem])
+      ) {
+        toast({ description: '비료는 프리미엄/위험한 비료 중 하나만 사용할 수 있습니다.', status: 'error' })
+        return prev
+      }
+
       const next = { ...prev, [item]: checked }
-      if (checked && item === 'PREMIUM_FERTILIZER') next.DANGEROUS_FERTILIZER = false
-      if (checked && item === 'DANGEROUS_FERTILIZER') next.PREMIUM_FERTILIZER = false
       return next
     })
   }
@@ -228,8 +250,8 @@ export const WatermelonEventPage = () => {
       toast({ description: '이미 최대 강화 단계입니다.', status: 'error' })
       return
     }
-    if (selectedItems.DANGEROUS_FERTILIZER && me.currentLevel >= 7) {
-      toast({ description: '7강 이상에서는 위험한 비료를 사용할 수 없습니다.', status: 'error' })
+    if ((selectedItems.PREMIUM_FERTILIZER || selectedItems.DANGEROUS_FERTILIZER) && me.currentLevel >= 7) {
+      toast({ description: '7강 이후에는 비료를 사용할 수 없습니다.', status: 'error' })
       return
     }
     if (selectedItems.PREMIUM_FERTILIZER && selectedItems.DANGEROUS_FERTILIZER) {
@@ -588,7 +610,6 @@ const EventLogPanel = ({
     afterLevel: number
     finalOutcome: EnhanceOutcome
     rawOutcome: EnhanceOutcome
-    costSeeds: number
     createdAt: string
   }>
   isLoading: boolean
@@ -615,9 +636,13 @@ const EventLogPanel = ({
                       {log.userName || `user #${log.userId}`}
                     </Text>
                   </HStack>
-                  <Text fontSize="sm" color={textMuted}>
-                    +{log.beforeLevel} → +{log.afterLevel} · {log.costSeeds.toLocaleString()}개
-                  </Text>
+                  <HStack spacing={2} fontSize="sm" color={textMuted}>
+                    <Text>+{log.beforeLevel}</Text>
+                    <Text as="span" aria-label="to">
+                      {'->'}
+                    </Text>
+                    <Text>+{log.afterLevel}</Text>
+                  </HStack>
                 </Stack>
                 <Text fontSize="xs" color={textMuted}>
                   {formatDate(log.createdAt)}
@@ -775,13 +800,16 @@ const InventoryPanel = ({
 }) => {
   const panelBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('brand.100', 'whiteAlpha.200')
-  const selectedBorderColor = useColorModeValue('brand.400', 'brand.300')
-  const selectedBg = useColorModeValue('brand.50', 'whiteAlpha.200')
-  const disabledBg = useColorModeValue('gray.50', 'whiteAlpha.50')
+  const textMuted = useColorModeValue('gray.600', 'gray.300')
   return (
     <Box borderWidth={1} borderColor={borderColor} borderRadius="xl" bg={panelBg} p={5} shadow="sm">
       <Stack spacing={4}>
-        <Text fontWeight="bold">내 아이템 보유 현황</Text>
+        <Stack spacing={1}>
+          <Text fontWeight="bold">내 아이템 보유 현황</Text>
+          <Text fontSize="xs" color={textMuted}>
+            아이템은 한 번에 최대 2개까지 사용할 수 있고, 비료는 7강 이후 사용할 수 없습니다.
+          </Text>
+        </Stack>
         {shopItems.map((item) => {
           const count = Number(me[itemCountKeys[item.key]] ?? 0)
           const isChecked = selectedItems[item.key]
@@ -797,13 +825,8 @@ const InventoryPanel = ({
               <HStack
                 w="full"
                 justify="space-between"
-                borderWidth={1}
-                borderColor={isChecked ? selectedBorderColor : borderColor}
-                borderRadius="md"
-                bg={isDisabled ? disabledBg : isChecked ? selectedBg : undefined}
                 p={3}
                 opacity={isDisabled ? 0.64 : 1}
-                transition="all 0.15s ease"
               >
                 <HStack minW={0}>
                   <Text fontSize="2xl">{item.icon}</Text>
