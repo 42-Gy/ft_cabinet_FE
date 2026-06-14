@@ -14,6 +14,7 @@ import type {
   EnhanceRequest,
   EnhanceResult,
   EventInventoryResult,
+  WatermelonEventMe,
 } from '@/features/watermelon-event/types'
 
 const defaultErrorMessage = '이벤트 요청 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.'
@@ -72,15 +73,30 @@ export const useWatermelonEventLogsQuery = () =>
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       )
     },
+    refetchInterval: 4000,
   })
 
 export const useEnhanceWatermelonMutation = () => {
   const toast = useToast()
+  const queryClient = useQueryClient()
   const invalidate = useInvalidateEventQueries()
 
   return useMutation<EnhanceResult, unknown, EnhanceRequest>({
     mutationFn: enhanceWatermelon,
-    onSuccess: () => {
+    onSuccess: (result) => {
+      queryClient.setQueryData<WatermelonEventMe | undefined>(watermelonEventKeys.me, (current) =>
+        current
+          ? {
+              ...current,
+              currentLevel: result.afterLevel,
+              seedBalance: result.seedBalance,
+              dropProtectionCount: result.dropProtectionCount,
+              destroyProtectionCount: result.destroyProtectionCount,
+              premiumFertilizerCount: result.premiumFertilizerCount,
+              dangerousFertilizerCount: result.dangerousFertilizerCount,
+            }
+          : current,
+      )
       invalidate()
     },
     onError: (error) => {
@@ -89,13 +105,27 @@ export const useEnhanceWatermelonMutation = () => {
   })
 }
 
+
 export const useBuyWatermelonEventItemMutation = () => {
   const toast = useToast()
+  const queryClient = useQueryClient()
   const invalidate = useInvalidateEventQueries()
 
   return useMutation<EventInventoryResult, unknown, BuyEventItemRequest>({
     mutationFn: buyWatermelonEventItem,
-    onSuccess: () => {
+    onSuccess: (result) => {
+      queryClient.setQueryData<WatermelonEventMe | undefined>(watermelonEventKeys.me, (current) =>
+        current
+          ? {
+              ...current,
+              seedBalance: result.seedBalance,
+              dropProtectionCount: result.dropProtectionCount,
+              destroyProtectionCount: result.destroyProtectionCount,
+              premiumFertilizerCount: result.premiumFertilizerCount,
+              dangerousFertilizerCount: result.dangerousFertilizerCount,
+            }
+          : current,
+      )
       toast({ description: '이벤트 아이템을 구매했습니다.', status: 'success' })
       invalidate()
     },
@@ -104,4 +134,3 @@ export const useBuyWatermelonEventItemMutation = () => {
     },
   })
 }
-

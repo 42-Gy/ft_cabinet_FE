@@ -185,6 +185,7 @@ export const WatermelonEventPage = () => {
   const enhanceCost = getCurrentCost(config, me.currentLevel)
   const totalCost = enhanceCost
   const getItemCount = (item: EventShopItem) => Number(me[itemCountKeys[item]] ?? 0)
+  const selectedItemCount = shopItems.filter((item) => selectedItems[item.key]).length
   const selectedItemsUsable = shopItems.every((item) => {
     if (!selectedItems[item.key]) return true
     if (getItemCount(item.key) <= 0) return false
@@ -256,6 +257,13 @@ export const WatermelonEventPage = () => {
         }),
         wait(800),
       ])
+      setSelectedItems((prev) => ({
+        DROP_PROTECTION: prev.DROP_PROTECTION && result.dropProtectionCount > 0,
+        DESTROY_PROTECTION: prev.DESTROY_PROTECTION && result.destroyProtectionCount > 0,
+        PREMIUM_FERTILIZER: prev.PREMIUM_FERTILIZER && result.premiumFertilizerCount > 0,
+        DANGEROUS_FERTILIZER:
+          prev.DANGEROUS_FERTILIZER && result.dangerousFertilizerCount > 0 && result.afterLevel < 7,
+      }))
       setLastResult(result)
       setAnimationState(result.finalOutcome)
       toast({
@@ -379,42 +387,9 @@ export const WatermelonEventPage = () => {
                       🍉 {enhanceCost.toLocaleString()}
                     </Text>
                   </HStack>
-                </Stack>
-              </Box>
-
-              <Box borderWidth={1} borderColor={borderColor} borderRadius="xl" p={4}>
-                <Stack spacing={4}>
-                  <Stack spacing={1}>
-                    <Text fontWeight="bold">아이템 선택</Text>
-                    <Text fontSize="sm" color={textMuted}>
-                      아이템은 강화 시도마다 선택할 수 있습니다.
-                    </Text>
-                  </Stack>
-                  <SimpleGrid columns={{ base: 1, md: 2, xl: 4 }} spacing={3}>
-                    {shopItems.map((item) => (
-                      <Checkbox
-                        key={item.key}
-                        isChecked={selectedItems[item.key]}
-                        isDisabled={isItemDisabled(item.key)}
-                        onChange={(event) => toggleItem(item.key, event.target.checked)}
-                      >
-                        <Stack spacing={1} ml={1}>
-                          <Text fontWeight="bold">
-                            {item.icon} {item.title}
-                          </Text>
-                          <Text fontSize="xs" color={textMuted}>
-                            {item.description}
-                          </Text>
-                          <Text fontSize="xs" color={textMuted}>
-                            보유 {getItemCount(item.key)}개 · 사용 시 추가 비용 없음
-                          </Text>
-                        </Stack>
-                      </Checkbox>
-                    ))}
-                  </SimpleGrid>
                   <HStack justify="space-between" flexWrap="wrap" gap={3}>
                     <Text fontSize="sm" color={textMuted}>
-                      강화 비용: {totalCost.toLocaleString()} 수박씨
+                      선택 아이템 {selectedItemCount}개 · 강화 비용 {totalCost.toLocaleString()} 수박씨
                     </Text>
                     <Button
                       size="lg"
@@ -438,7 +413,12 @@ export const WatermelonEventPage = () => {
               myRank={me.rank}
               myUserId={me.userId}
             />
-            <InventoryPanel me={me} />
+            <InventoryPanel
+              me={me}
+              selectedItems={selectedItems}
+              onToggleItem={toggleItem}
+              isItemDisabled={isItemDisabled}
+            />
             <Box borderWidth={1} borderColor={borderColor} borderRadius="xl" bg={softPanelBg} p={5}>
               <Stack spacing={2}>
                 <Text fontWeight="bold">내 현재 정보</Text>
@@ -742,7 +722,7 @@ const RankingPanel = ({
         {isLoading ? (
           <LoadingState label="랭킹을 불러오는 중입니다." />
         ) : (
-          <Stack spacing={2}>
+          <Stack spacing={2} maxH="360px" overflowY="auto" pr={1}>
             {rankings.map((entry, index) => {
               const isMe = entry.userId === myUserId
               return (
@@ -782,22 +762,58 @@ const RankingPanel = ({
   )
 }
 
-const InventoryPanel = ({ me }: { me: WatermelonEventMe }) => {
+const InventoryPanel = ({
+  me,
+  selectedItems,
+  onToggleItem,
+  isItemDisabled,
+}: {
+  me: WatermelonEventMe
+  selectedItems: Record<EventShopItem, boolean>
+  onToggleItem: (item: EventShopItem, checked: boolean) => void
+  isItemDisabled: (item: EventShopItem) => boolean
+}) => {
   const panelBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('brand.100', 'whiteAlpha.200')
+  const selectedBorderColor = useColorModeValue('brand.400', 'brand.300')
+  const selectedBg = useColorModeValue('brand.50', 'whiteAlpha.200')
+  const disabledBg = useColorModeValue('gray.50', 'whiteAlpha.50')
   return (
     <Box borderWidth={1} borderColor={borderColor} borderRadius="xl" bg={panelBg} p={5} shadow="sm">
       <Stack spacing={4}>
         <Text fontWeight="bold">내 아이템 보유 현황</Text>
-        {shopItems.map((item) => (
-          <HStack key={item.key} justify="space-between" borderWidth={1} borderColor={borderColor} borderRadius="md" p={3}>
-            <HStack>
-              <Text fontSize="2xl">{item.icon}</Text>
-              <Text fontWeight="bold">{item.title}</Text>
-            </HStack>
-            <Text fontWeight="black">{Number(me[itemCountKeys[item.key]] ?? 0)}개</Text>
-          </HStack>
-        ))}
+        {shopItems.map((item) => {
+          const count = Number(me[itemCountKeys[item.key]] ?? 0)
+          const isChecked = selectedItems[item.key]
+          const isDisabled = isItemDisabled(item.key)
+          return (
+            <Checkbox
+              key={item.key}
+              w="full"
+              isChecked={isChecked}
+              isDisabled={isDisabled}
+              onChange={(event) => onToggleItem(item.key, event.target.checked)}
+            >
+              <HStack
+                w="full"
+                justify="space-between"
+                borderWidth={1}
+                borderColor={isChecked ? selectedBorderColor : borderColor}
+                borderRadius="md"
+                bg={isDisabled ? disabledBg : isChecked ? selectedBg : undefined}
+                p={3}
+                opacity={isDisabled ? 0.64 : 1}
+                transition="all 0.15s ease"
+              >
+                <HStack minW={0}>
+                  <Text fontSize="2xl">{item.icon}</Text>
+                  <Text fontWeight="bold">{item.title}</Text>
+                </HStack>
+                <Text fontWeight="black">{count}개</Text>
+              </HStack>
+            </Checkbox>
+          )
+        })}
       </Stack>
     </Box>
   )
