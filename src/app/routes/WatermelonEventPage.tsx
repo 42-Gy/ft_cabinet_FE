@@ -306,7 +306,7 @@ export const WatermelonEventPage = () => {
         : undefined
 
   return (
-    <Box mx="calc(50% - 50vw)" px={{ base: 4, md: 8 }} py={6} bg={pageBg}>
+    <Box minH="calc(100vh - 80px)" px={{ base: 4, md: 8 }} py={6} bg={pageBg}>
       <Stack spacing={6} maxW="1500px" mx="auto">
         <Stack spacing={1}>
           <Badge colorScheme="pink" w="fit-content">
@@ -488,7 +488,7 @@ const SummaryCard = ({ label, value, icon }: SummaryCardProps) => {
 const LevelTrack = ({ currentLevel, maxLevel }: { currentLevel: number; maxLevel: number }) => {
   const borderColor = useColorModeValue('brand.100', 'whiteAlpha.200')
   return (
-    <HStack spacing={2} overflowX="auto" pb={1}>
+    <HStack spacing={2} overflowX="auto" overflowY="visible" px={1} pt={2} pb={3}>
       {Array.from({ length: maxLevel }, (_, index) => {
         const level = index + 1
         const isActive = level === currentLevel
@@ -638,8 +638,19 @@ const EventLogPanel = ({
                   </HStack>
                   <HStack spacing={2} fontSize="sm" color={textMuted}>
                     <Text>+{log.beforeLevel}</Text>
-                    <Text as="span" aria-label="to">
-                      {'->'}
+                    <Text
+                      as="span"
+                      aria-label="to"
+                      borderRadius="full"
+                      bg="brand.50"
+                      color="brand.500"
+                      fontSize="xs"
+                      fontWeight="black"
+                      lineHeight={1}
+                      px={2}
+                      py={1}
+                    >
+                      {'➜'}
                     </Text>
                     <Text>+{log.afterLevel}</Text>
                   </HStack>
