@@ -21,6 +21,7 @@ import {
   Textarea,
   useColorModeValue,
   useDisclosure,
+  useToast,
 } from '@chakra-ui/react'
 import { useNavigate } from 'react-router-dom'
 import { SiGoogle, SiKakao } from 'react-icons/si'
@@ -77,6 +78,7 @@ export const MyLockersPage = () => {
   const navigate = useNavigate()
   const startSocialLink = useStartSocialLink()
   const [, setSocialLinkStatusVersion] = useState(0)
+  const toast = useToast()
 
   const cardBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200')
@@ -264,6 +266,7 @@ export const MyLockersPage = () => {
 
   const kakaoLinked = isSocialProviderLinked(me, 'kakao')
   const googleLinked = isSocialProviderLinked(me, 'google')
+  const isPisciner = me.isPisciner === true
   const hasLocker = Boolean(me.lentCabinetId)
 
   const getCount = (type: UserItemType) => itemCounts[type] ?? 0
@@ -271,6 +274,10 @@ export const MyLockersPage = () => {
   const handleUseTicket = (type: UserItemType) => {
     if (getCount(type) === 0) return
     if (type === 'EXTENSION') {
+      if (isPisciner) {
+        toast({ description: '피시너는 대여 기간을 연장할 수 없습니다.', status: 'error' })
+        return
+      }
       if (!hasLocker) return
       extendMutation.mutate()
       return
@@ -506,6 +513,9 @@ export const MyLockersPage = () => {
             <Text fontSize="sm" color={textMuted}>
               {me.name} · {me.email}
             </Text>
+            <Badge colorScheme={isPisciner ? 'purple' : 'green'} w="fit-content">
+              {isPisciner ? '라피신 교육생' : '본과정'}
+            </Badge>
             <Box>
               <Text fontSize="sm" color={textMuted}>
                 보유 수박씨
@@ -600,9 +610,14 @@ export const MyLockersPage = () => {
                 <Switch
                   isChecked={autoExtensionEnabled}
                   onChange={(event) => handleAutoExtensionToggle(event.target.checked)}
-                  isDisabled={autoExtensionMutation.isPending}
+                  isDisabled={isPisciner || autoExtensionMutation.isPending}
                 />
               </FormControl>
+              {isPisciner && (
+                <Text fontSize="xs" color={textMuted}>
+                  라피신 교육생은 대여 기간을 연장할 수 없습니다.
+                </Text>
+              )}
               <HStack spacing={3}>
                 <Button colorScheme="red" onClick={returnModal.onOpen}>
                   반납하기
@@ -612,9 +627,9 @@ export const MyLockersPage = () => {
                   variant="outline"
                   onClick={() => renewMutation.mutate()}
                   isLoading={renewMutation.isPending}
-                  isDisabled={getCount('LENT') === 0}
+                  isDisabled={isPisciner || getCount('LENT') === 0}
                 >
-                  수동 연장하기
+                  {isPisciner ? '연장 불가' : '수동 연장하기'}
                 </Button>
               </HStack>
             </Stack>
@@ -673,18 +688,22 @@ export const MyLockersPage = () => {
                 <Stack spacing={3} h="full">
                   {(() => {
                     const count = getCount('EXTENSION')
-                    const useStore = count === 0
+                    const useStore = count === 0 && !isPisciner
                     return (
                       <TicketCard
                         title="연장권"
-                        description="대여 기간을 3일 연장합니다. (최대 보유 5개/월 구매 5회)"
+                        description={
+                          isPisciner
+                            ? '라피신 교육생은 대여 기간을 연장할 수 없습니다.'
+                            : '대여 기간을 3일 연장합니다. (최대 보유 5개/월 구매 5회)'
+                        }
                         count={count}
-                        buttonLabel={useStore ? '스토어 가서 구매하기' : '연장하기'}
+                        buttonLabel={isPisciner ? '연장 불가' : useStore ? '스토어 가서 구매하기' : '연장하기'}
                         onClick={
                           useStore ? () => navigate('/store') : () => handleUseTicket('EXTENSION')
                         }
                         isLoading={extendMutation.isPending}
-                        isDisabled={!useStore && !hasLocker}
+                        isDisabled={isPisciner || (!useStore && !hasLocker)}
                         allowZeroAction={useStore}
                         bg={itemBg}
                         textMuted={textMuted}

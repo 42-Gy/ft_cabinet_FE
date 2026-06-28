@@ -99,7 +99,17 @@ const cabinetStatusOptions: CabinetStatusValue[] = [
   'DISABLED',
   'PENDING',
 ]
-const cabinetLentTypeOptions: CabinetLentType[] = ['PRIVATE', 'SHARE', 'CLUB']
+const cabinetLentTypeOptions: CabinetLentType[] = ['PRIVATE', 'SHARE', 'CLUB', 'LAPISCINE']
+
+const cabinetLentTypeLabels: Record<CabinetLentType, string> = {
+  PRIVATE: '개인',
+  SHARE: '공유',
+  CLUB: '동아리',
+  LAPISCINE: '라피신',
+}
+
+type BundleStatusOption = CabinetStatusValue | 'KEEP'
+type BundleLentTypeOption = CabinetLentType | 'KEEP'
 
 const itemGrantOptions = [
   { label: '대여권', value: 'LENT' },
@@ -515,7 +525,8 @@ export const AdminDashboard = () => {
   const [selectedSectionIds, setSelectedSectionIds] = useState<number[]>([])
   const [selectedStatuses, setSelectedStatuses] = useState<CabinetStatusValue[]>([])
   const [selectedCabinetIds, setSelectedCabinetIds] = useState<number[]>([])
-  const [bundleStatus, setBundleStatus] = useState<CabinetStatusValue>('BROKEN')
+  const [bundleStatus, setBundleStatus] = useState<BundleStatusOption>('KEEP')
+  const [bundleLentType, setBundleLentType] = useState<BundleLentTypeOption>('KEEP')
   const [bundleNote, setBundleNote] = useState('')
   const [calendarMonth, setCalendarMonth] = useState(() => new Date())
   const [eventTitle, setEventTitle] = useState('')
@@ -741,11 +752,14 @@ export const AdminDashboard = () => {
 
   const handleBundleUpdate = () => {
     if (selectedCabinetIds.length === 0) return
+    const statusNote = bundleNote.trim()
+    if (bundleStatus === 'KEEP' && bundleLentType === 'KEEP' && !statusNote) return
     cabinetBundleMutation.mutate(
       {
         cabinetIds: selectedCabinetIds,
-        status: bundleStatus,
-        statusNote: bundleNote.trim() || undefined,
+        status: bundleStatus === 'KEEP' ? undefined : bundleStatus,
+        lentType: bundleLentType === 'KEEP' ? undefined : bundleLentType,
+        statusNote: statusNote || undefined,
       },
       {
         onSuccess: () => {
@@ -1724,8 +1738,9 @@ export const AdminDashboard = () => {
                         <FormLabel>변경할 상태</FormLabel>
                         <Select
                           value={bundleStatus}
-                          onChange={(event) => setBundleStatus(event.target.value as CabinetStatusValue)}
+                          onChange={(event) => setBundleStatus(event.target.value as BundleStatusOption)}
                         >
+                          <option value="KEEP">기존 상태 유지</option>
                           {cabinetStatusOptions.map((status) => (
                             <option key={status} value={status}>
                               {statusLabels[status]}
@@ -1733,7 +1748,21 @@ export const AdminDashboard = () => {
                           ))}
                         </Select>
                       </FormControl>
-                      <FormControl gridColumn={{ base: 'auto', md: 'span 2' }}>
+                      <FormControl>
+                        <FormLabel>변경할 대여 타입</FormLabel>
+                        <Select
+                          value={bundleLentType}
+                          onChange={(event) => setBundleLentType(event.target.value as BundleLentTypeOption)}
+                        >
+                          <option value="KEEP">기존 타입 유지</option>
+                          {cabinetLentTypeOptions.map((type) => (
+                            <option key={type} value={type}>
+                              {cabinetLentTypeLabels[type]}
+                            </option>
+                          ))}
+                        </Select>
+                      </FormControl>
+                      <FormControl>
                         <FormLabel>상태 메모</FormLabel>
                         <Input
                           placeholder="예: 문짝 파손"
@@ -1745,11 +1774,16 @@ export const AdminDashboard = () => {
                     <Button
                       colorScheme="brand"
                       isLoading={cabinetBundleMutation.isPending}
-                      isDisabled={selectedCabinetIds.length === 0}
+                      isDisabled={
+                        selectedCabinetIds.length === 0 ||
+                        (bundleStatus === 'KEEP' &&
+                          bundleLentType === 'KEEP' &&
+                          bundleNote.trim().length === 0)
+                      }
                       onClick={handleBundleUpdate}
                       alignSelf="flex-start"
                     >
-                      선택한 {selectedCabinetIds.length}개 상태 변경
+                      선택한 {selectedCabinetIds.length}개 일괄 변경
                     </Button>
                   </Stack>
                 </Stack>
@@ -1788,7 +1822,7 @@ export const AdminDashboard = () => {
                       >
                         {cabinetLentTypeOptions.map((type) => (
                           <option key={type} value={type}>
-                            {type}
+                            {cabinetLentTypeLabels[type]}
                           </option>
                         ))}
                       </Select>

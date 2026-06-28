@@ -47,7 +47,10 @@ export const StorePage = () => {
   const toDisplayItem = (item: StoreItemResponse) => {
     const meta = STORE_ITEM_META_BY_TYPE[item.type]
     const title = meta?.title ?? item.name
-    const description = STORE_ITEM_DESCRIPTION_BY_TYPE[item.type] || item.description || `${title} 아이템입니다.`
+    const isPiscinerExtension = me.isPisciner === true && item.type === 'EXTENSION'
+    const description = isPiscinerExtension
+      ? '라피신 교육생은 대여 기간을 연장할 수 없습니다.'
+      : STORE_ITEM_DESCRIPTION_BY_TYPE[item.type] || item.description || `${title} 아이템입니다.`
     const priceLabel = `${Number(item.price ?? 0).toLocaleString()} 수박씨`
     return {
       id: item.itemId,
@@ -55,7 +58,7 @@ export const StorePage = () => {
       description,
       priceLabel,
       icon: meta?.icon,
-      disabled: meta?.disabled,
+      disabled: meta?.disabled || isPiscinerExtension,
     }
   }
 

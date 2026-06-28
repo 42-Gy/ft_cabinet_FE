@@ -80,7 +80,7 @@ export type CabinetStatusValue =
   | 'OVERDUE'
   | 'DISABLED'
   | 'PENDING'
-export type CabinetLentType = 'PRIVATE' | 'SHARE' | 'CLUB'
+export type CabinetLentType = 'PRIVATE' | 'SHARE' | 'CLUB' | 'LAPISCINE'
 export type AdminItemType = 'LENT' | 'EXTENSION' | 'SWAP' | 'PENALTY_EXEMPTION'
 
 export interface CabinetStatusRequest {
@@ -209,7 +209,8 @@ export interface AdminBrokenCabinet {
 
 export interface CabinetStatusBundleRequest {
   cabinetIds: number[]
-  status: CabinetStatusValue
+  status?: CabinetStatusValue
+  lentType?: CabinetLentType
   statusNote?: string
 }
 

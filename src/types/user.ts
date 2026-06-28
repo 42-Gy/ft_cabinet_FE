@@ -31,6 +31,7 @@ export interface UserProfile {
   name: string
   email: string
   role?: string | null
+  isPisciner?: boolean
   coin: number
   penaltyDays: number
   monthlyLogtime: number

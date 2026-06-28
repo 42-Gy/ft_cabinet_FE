@@ -28,6 +28,7 @@ const parseErrorMessage = (error: unknown) => {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data
     if (typeof data === 'string') return data
+    if (data?.error?.message) return data.error.message
     if (data?.message) return data.message
   }
   if (error instanceof Error) return error.message
