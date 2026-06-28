@@ -714,7 +714,7 @@ export const AdminDashboard = () => {
   }, [cabinetsQuery.data])
 
   const filteredCabinets = useMemo(() => {
-    return cabinets.filter((cabinet) => {
+    const filtered = cabinets.filter((cabinet) => {
       const sectionId = extractSectionId(cabinet.section)
       if (selectedSectionIds.length > 0 && (!sectionId || !selectedSectionIds.includes(sectionId))) {
         return false
@@ -724,6 +724,7 @@ export const AdminDashboard = () => {
       }
       return true
     })
+    return filtered.sort((a, b) => a.visibleNum - b.visibleNum)
   }, [cabinets, selectedSectionIds, selectedStatuses])
 
   const toggleCabinetSelection = (cabinetId: number) => {
