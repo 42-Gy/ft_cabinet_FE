@@ -62,6 +62,23 @@ type LockerCardPalette = {
   borderWidth?: number
 }
 
+const LAPISCINE_VISIBLE_NUM_START = 3061
+
+const isLapiscineCabinet = (cabinet: Cabinet) =>
+  cabinet.visibleNum >= LAPISCINE_VISIBLE_NUM_START || cabinet.lentType === 'LAPISCINE'
+
+const getLockerImage = (cabinet: Cabinet, status: CabinetStatus) => {
+  if (isLapiscineCabinet(cabinet)) {
+    return status === 'FULL' || status === 'OVERDUE'
+      ? "url('/assets/images/lapiscine22.png')"
+      : "url('/assets/images/lapiscine11.png')"
+  }
+
+  if (status === 'AVAILABLE') return "url('/assets/images/subak_ncabi.png')"
+  if (status === 'FULL') return "url('/assets/images/subak_cabi.png')"
+  return "url('/assets/images/subak_holding.png')"
+}
+
 export const LockersPage = () => {
   const { data: me } = useMeQuery()
   const isLoggedIn = Boolean(me)
@@ -835,11 +852,7 @@ export const LockersPage = () => {
                       const palette = lockerStatusPalette[effectiveStatus] ?? defaultCardStyle
                       const statusStyle = isMine ? myLockerStyle : isSelected ? selectedPalette : palette
                       const isAvailable = effectiveStatus === 'AVAILABLE'
-                      const bgImage = isAvailable
-                        ? "url('/assets/images/subak_ncabi.png')"
-                        : effectiveStatus === 'FULL'
-                          ? "url('/assets/images/subak_cabi.png')"
-                          : "url('/assets/images/subak_holding.png')"
+                      const bgImage = getLockerImage(cabinet, effectiveStatus)
                       return (
                         <Box
                           key={cabinet.cabinetId}
