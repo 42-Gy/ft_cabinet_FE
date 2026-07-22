@@ -44,4 +44,3 @@ export const getWatermelonEventConfig = async () => {
   const { data } = await apiClient.get(`${baseUrl}/config`)
   return unwrapApiResponse<WatermelonEventConfig>(data)
 }
-

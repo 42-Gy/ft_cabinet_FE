@@ -21,7 +21,6 @@ import { env } from '@/libs/env'
 
 const routes = [
   { to: '/admin', label: '관리자', requiresAdmin: true },
-  { to: '/event', label: '이벤트' },
   { to: '/lockers', label: '사물함' },
   { to: '/my/lockers', label: '내 사물함' },
   { to: '/attendance', label: '출석' },
@@ -61,7 +60,6 @@ export const AppLayout = () => {
   const isAdmin = me?.role === 'ADMIN' || me?.role === 'ROLE_ADMIN' || me?.role === 'MASTER'
   const isMaintenanceMode = false
   const isAuthCallbackPath = location.pathname === '/auth/callback'
-  const isEventPath = location.pathname === '/event'
   const shouldShowMaintenance = isMaintenanceMode && !isAdmin && !isAuthCallbackPath
   const renderLinks = (direction: 'row' | 'column') => (
     <Stack
@@ -191,12 +189,12 @@ export const AppLayout = () => {
           </Box>
         )}
       </Box>
-      <Box as="main" flex={1} w="full" bg={isEventPath ? '#fff7fa' : mainBg}>
+      <Box as="main" flex={1} w="full" bg={mainBg}>
         <Box
           mx="auto"
-          maxW={isEventPath ? 'none' : '1200px'}
-          px={isEventPath ? 0 : { base: 4, md: 8 }}
-          py={isEventPath ? 0 : { base: 6, md: 10 }}
+          maxW="1200px"
+          px={{ base: 4, md: 8 }}
+          py={{ base: 6, md: 10 }}
         >
           <Outlet />
         </Box>
