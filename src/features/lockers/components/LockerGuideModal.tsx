@@ -8,7 +8,6 @@ import {
   Heading,
   HStack,
   Image,
-  Link,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -103,30 +102,19 @@ export const LockerGuideModal = ({ section, onClose, onComplete }: LockerGuideMo
             )}
             <SimpleGrid columns={{ base: 1, md: step.images.length }} spacing={4}>
               {step.images.map((picture) => (
-                <Link
+                <Image
                   key={picture.src}
-                  href={picture.src}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`${picture.alt} 원본 크게 보기 (새 탭)`}
+                  src={picture.src}
+                  alt={picture.alt}
                   justifySelf="center"
                   w="full"
                   maxW="390px"
-                >
-                  <Image
-                    src={picture.src}
-                    alt={picture.alt}
-                    w="full"
-                    h="auto"
-                    objectFit="contain"
-                    borderRadius="lg"
-                    borderWidth={1}
-                    borderColor="gray.200"
-                  />
-                  <Text fontSize="xs" textAlign="center" mt={1}>
-                    이미지를 누르면 크게 볼 수 있어요. (새 탭)
-                  </Text>
-                </Link>
+                  h="auto"
+                  objectFit="contain"
+                  borderRadius="lg"
+                  borderWidth={1}
+                  borderColor="gray.200"
+                />
               ))}
             </SimpleGrid>
           </Stack>

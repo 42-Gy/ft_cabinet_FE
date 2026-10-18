@@ -130,6 +130,7 @@ async function main() {
       await dialog().locator('img').evaluateAll(async (imgs) => {
         await Promise.all(imgs.map((img) => img.decode()))
         if (imgs.some((img) => !img.complete || img.naturalWidth === 0)) throw new Error('Image failed')
+        if (imgs.some((img) => img.closest('a'))) throw new Error('Guide images must not be links')
       })
       for (const src of await dialog().locator('img').evaluateAll((imgs) => imgs.map((i) => i.src))) images.add(src)
       if ([0, 1, 4, 6].includes(index)) await screenshot(`guide-step-${index + 1}-${index % 2 ? 'desktop' : 'mobile'}`)

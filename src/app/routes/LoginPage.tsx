@@ -112,7 +112,7 @@ export const LoginPage = () => {
           42경산 교육생이 아니신가요?
         </Link>
         <Text fontSize="sm" color={textMuted}>
-          42경산 교육 과정을 알아보세요. (새 탭)
+          42경산 교육 과정을 알아보세요.
         </Text>
       </Stack>
     </Stack>
