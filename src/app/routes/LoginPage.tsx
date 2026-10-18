@@ -3,6 +3,7 @@ import {
   Button,
   Heading,
   Image,
+  Link,
   SimpleGrid,
   Stack,
   Text,
@@ -50,6 +51,7 @@ export const LoginPage = () => {
   const cardBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200')
   const textMuted = useColorModeValue('gray.600', 'gray.300')
+  const linkColor = useColorModeValue('brand.700', 'brand.200')
 
   if (isAuthenticated) {
     return <Navigate to="/" replace />
@@ -98,6 +100,21 @@ export const LoginPage = () => {
           </Box>
         ))}
       </SimpleGrid>
+      <Stack spacing={1} align="center" textAlign="center">
+        <Link
+          href="https://www.42gyeongsan.kr/ko/page.do?mnu_uid=227"
+          target="_blank"
+          rel="noopener noreferrer"
+          color={linkColor}
+          fontWeight="semibold"
+          aria-label="42경산 교육생이 아니신가요? 42경산 공식 소개 사이트 열기 (새 탭)"
+        >
+          42경산 교육생이 아니신가요?
+        </Link>
+        <Text fontSize="sm" color={textMuted}>
+          42경산 교육 과정을 알아보세요. (새 탭)
+        </Text>
+      </Stack>
     </Stack>
   )
 }
