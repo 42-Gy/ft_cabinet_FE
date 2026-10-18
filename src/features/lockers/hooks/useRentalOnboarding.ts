@@ -1,41 +1,36 @@
 import { useState } from 'react'
+import { useToast } from '@chakra-ui/react'
 
-// This records guide acknowledgement only; it is never evidence of rental history.
-const storageKey = (userId: number) => `subak:locker-guide:v1:user:${userId}`
-const acknowledgedInSession = new Set<number>()
-
-const hasAcknowledgedGuide = (userId: number) => {
-  if (acknowledgedInSession.has(userId)) return true
-  try {
-    return window.localStorage.getItem(storageKey(userId)) === 'completed'
-  } catch {
-    return false
-  }
-}
+export type RentalIntent = 'rent' | 'swapReservation'
 
 export const useRentalOnboarding = (
   userId: number | undefined,
-  onRent: (visibleNum: number) => void,
+  isFirstRental: boolean | undefined,
+  onProceed: (visibleNum: number, intent: RentalIntent) => void,
 ) => {
-  const [pending, setPending] = useState<{ userId: number; visibleNum: number } | null>(null)
+  const toast = useToast()
+  const [pending, setPending] = useState<{
+    userId: number
+    visibleNum: number
+    intent: RentalIntent
+  } | null>(null)
 
-  const requestRental = (visibleNum: number) => {
-    if (userId === undefined) return
-    if (hasAcknowledgedGuide(userId)) onRent(visibleNum)
-    else setPending({ userId, visibleNum })
+  const requestRental = (visibleNum: number, intent: RentalIntent = 'rent') => {
+    if (userId === undefined || typeof isFirstRental !== 'boolean') {
+      toast({
+        status: 'warning',
+        description: '최초 대여 정보를 확인할 수 없습니다. 내 정보를 새로고침해주세요.',
+      })
+      return
+    }
+    if (isFirstRental) setPending({ userId, visibleNum, intent })
+    else onProceed(visibleNum, intent)
   }
 
   const complete = () => {
-    // Do not continue a pending rental if the signed-in account has changed.
-    if (!pending || pending.userId !== userId) return
-    acknowledgedInSession.add(userId)
-    try {
-      window.localStorage.setItem(storageKey(userId), 'completed')
-    } catch {
-      // In restricted browsers, acknowledgement lasts for this session only.
-    }
+    if (!pending || pending.userId !== userId || typeof isFirstRental !== 'boolean') return
     setPending(null)
-    onRent(pending.visibleNum)
+    onProceed(pending.visibleNum, pending.intent)
   }
 
   return {

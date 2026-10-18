@@ -28,6 +28,10 @@ export interface ItemHistory {
 
 export interface UserProfile {
   userId: number
+  // Missing data is an unknown state, never an experienced renter.
+  isFirstRental?: boolean
+  reservedVisibleNum?: number | null
+  reservationRemainingSeconds?: number | null
   name: string
   email: string
   role?: string | null

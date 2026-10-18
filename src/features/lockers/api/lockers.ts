@@ -1,6 +1,7 @@
+import axios from 'axios'
+import { resolveCabinetId } from '@/features/lockers/libs/cabinetIdResolver'
 import { apiClient, publicClient } from '@/libs/axios/client'
 import { coerceArray, unwrapApiResponse } from '@/libs/axios/unwrap'
-import { resolveCabinetId } from '@/features/lockers/libs/cabinetIdResolver'
 import type {
   Cabinet,
   CabinetDetail,
@@ -10,6 +11,9 @@ import type {
 } from '@/types/locker'
 
 const toActionResult = (data: unknown): LockerActionResult => {
+  if (data && typeof data === 'object' && 'success' in data && data.success === false) {
+    throw new Error('message' in data ? String(data.message) : '요청을 처리하지 못했습니다.')
+  }
   if (typeof data === 'string') {
     return { message: data }
   }
@@ -59,9 +63,13 @@ export const getCabinetSummaryAll = async (): Promise<CabinetSummaryAll> => {
   }
 }
 
-export const getCabinetDetail = async (cabinetId: number): Promise<CabinetDetail> => {
+export const getCabinetDetail = async (
+  cabinetId: number,
+  authenticated = false,
+): Promise<CabinetDetail> => {
   const resolvedId = resolveCabinetId(cabinetId)
-  const { data } = await publicClient.get(`/v4/cabinets/${resolvedId}`)
+  const client = authenticated ? apiClient : publicClient
+  const { data } = await client.get(`/v4/cabinets/${resolvedId}`)
   return unwrapApiResponse<CabinetDetail>(data)
 }
 
@@ -78,9 +86,7 @@ export interface ReturnCabinetPayload {
   reason?: string
 }
 
-export const returnCabinet = async (
-  payload: ReturnCabinetPayload,
-): Promise<LockerActionResult> => {
+export const returnCabinet = async (payload: ReturnCabinetPayload): Promise<LockerActionResult> => {
   const formData = new FormData()
   formData.append('file', payload.file)
   formData.append('previousPassword', payload.previousPassword)
@@ -111,6 +117,18 @@ export const buyStoreItem = async (itemId: number): Promise<LockerActionResult> 
 export const reserveCabinet = async (visibleNum: number): Promise<LockerActionResult> => {
   const { data } = await apiClient.post(`/v4/lent/reservation/${visibleNum}`, {})
   return toActionResult(data)
+}
+
+export const cancelReservation = async (): Promise<LockerActionResult> => {
+  try {
+    const { data } = await apiClient.delete('/v4/lent/reservation')
+    return toActionResult(data)
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return { message: '취소할 예약이 없습니다. 최신 상태를 확인했습니다.' }
+    }
+    throw error
+  }
 }
 
 export const useExtensionTicket = async (): Promise<LockerActionResult> => {
@@ -149,9 +167,7 @@ export const usePenaltyTicket = async (): Promise<LockerActionResult> => {
   return toActionResult(data)
 }
 
-export const updateAutoExtension = async (
-  enabled: boolean,
-): Promise<LockerActionResult> => {
+export const updateAutoExtension = async (enabled: boolean): Promise<LockerActionResult> => {
   const { data } = await apiClient.patch('/v4/lent/extension/auto', { enabled })
   if (typeof data === 'object' && data && 'data' in data) {
     const nested = (data as { data?: { message?: string } }).data?.message

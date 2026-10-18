@@ -3,19 +3,20 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import {
   buyStoreItem,
+  cancelReservation,
   checkReturnImage,
+  usePenaltyTicket as exemptPenaltyWithTicket,
+  useExtensionTicket as extendWithTicket,
   getCabinetDetail,
+  getCabinets,
   getCabinetSummary,
   getCabinetSummaryAll,
-  getCabinets,
+  renewLentCabinet,
   rentCabinet,
   reserveCabinet,
-  renewLentCabinet,
   returnCabinet,
   swapCabinet,
   updateAutoExtension,
-  useExtensionTicket,
-  usePenaltyTicket,
   type ReturnCabinetPayload,
   type SwapCabinetPayload,
 } from '@/features/lockers/api/lockers'
@@ -26,6 +27,11 @@ const defaultErrorMessage = '요청 중 문제가 발생했습니다. 잠시 후
 
 const parseErrorMessage = (error: unknown) => {
   if (axios.isAxiosError(error)) {
+    if (!error.response)
+      return '요청 결과를 확인할 수 없습니다. 최신 예약 상태를 확인한 후 다시 시도해주세요.'
+    if (error.response?.status === 409)
+      return '현재 처리 중인 요청입니다. 잠시 후 다시 시도해주세요.'
+    if (error.response?.status === 429) return '예약 요청이 많습니다. 잠시 후 다시 시도해주세요.'
     const data = error.response?.data
     if (typeof data === 'string') return data
     if (data?.error?.message) return data.error.message
@@ -54,7 +60,9 @@ const cabinetSummaryKeys = {
 const cabinetSummaryAllKey = ['cabinet-summary-all'] as const
 
 const cabinetDetailKeys = {
-  detail: (cabinetId: number | string) => ['cabinet-detail', cabinetId] as const,
+  root: ['cabinet-detail'] as const,
+  detail: (cabinetId: number | string, authenticated = false) =>
+    ['cabinet-detail', cabinetId, authenticated] as const,
 }
 
 interface FloorQueryOptions {
@@ -65,10 +73,7 @@ interface FloorQueryOptions {
 const getFloorKey = (floor?: number | null) =>
   typeof floor === 'number' && !Number.isNaN(floor) ? floor : 'unknown'
 
-export const useCabinetsQuery = ({
-  floor,
-  enabled = true,
-}: FloorQueryOptions) => {
+export const useCabinetsQuery = ({ floor, enabled = true }: FloorQueryOptions) => {
   return useQuery({
     queryKey: cabinetKeys.list(getFloorKey(floor)),
     queryFn: () => {
@@ -78,13 +83,12 @@ export const useCabinetsQuery = ({
       return getCabinets(floor, { publicAccess: false })
     },
     enabled: Boolean(typeof floor === 'number' && enabled),
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
   })
 }
 
-export const useCabinetSummaryQuery = ({
-  floor,
-  enabled = true,
-}: FloorQueryOptions) => {
+export const useCabinetSummaryQuery = ({ floor, enabled = true }: FloorQueryOptions) => {
   return useQuery({
     queryKey: cabinetSummaryKeys.list(getFloorKey(floor)),
     queryFn: () => {
@@ -107,26 +111,30 @@ export const useCabinetSummaryAllQuery = () =>
     refetchOnWindowFocus: false,
   })
 
-export const useCabinetDetailQuery = (cabinetId?: number | null) =>
+export const useCabinetDetailQuery = (cabinetId?: number | null, authenticated = false) =>
   useQuery({
-    queryKey: cabinetDetailKeys.detail(cabinetId ?? 'none'),
+    queryKey: cabinetDetailKeys.detail(cabinetId ?? 'none', authenticated),
     queryFn: () => {
       if (typeof cabinetId !== 'number') {
         throw new Error('사물함 번호가 필요합니다.')
       }
-      return getCabinetDetail(cabinetId)
+      return getCabinetDetail(cabinetId, authenticated)
     },
     enabled: typeof cabinetId === 'number',
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
   })
 
 const useInvalidateLockerQueries = () => {
   const queryClient = useQueryClient()
-  return () => {
-    queryClient.invalidateQueries({ queryKey: cabinetKeys.root })
-    queryClient.invalidateQueries({ queryKey: cabinetSummaryKeys.root })
-    queryClient.invalidateQueries({ queryKey: cabinetSummaryAllKey })
-    queryClient.invalidateQueries({ queryKey: meQueryKeys.root })
-  }
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: cabinetKeys.root }),
+      queryClient.invalidateQueries({ queryKey: cabinetSummaryKeys.root }),
+      queryClient.invalidateQueries({ queryKey: cabinetSummaryAllKey }),
+      queryClient.invalidateQueries({ queryKey: cabinetDetailKeys.root }),
+      queryClient.invalidateQueries({ queryKey: meQueryKeys.root }),
+    ])
 }
 
 export const useRentCabinetMutation = () => {
@@ -155,10 +163,11 @@ export const useRentCabinetMutation = () => {
         description: resolveSuccessMessage(result.message, '대여가 완료되었습니다.'),
         status: 'success',
       })
-      invalidate()
+      return invalidate()
     },
     onError: (error) => {
       toast({ description: parseErrorMessage(error), status: 'error' })
+      void invalidate()
     },
   })
 }
@@ -230,17 +239,33 @@ export const lockerQueryKeys = {
 
 export const useReserveCabinetMutation = () => {
   const toast = useToast()
+  const invalidate = useInvalidateLockerQueries()
   return useMutation<LockerActionResult, unknown, number>({
     mutationFn: async (visibleNum) => reserveCabinet(visibleNum),
+    retry: false,
     onSuccess: (result) => {
       toast({
-        description: resolveSuccessMessage(result.message, '이사 예약이 되었습니다.'),
+        description: resolveSuccessMessage(result.message, '사물함 예약이 되었습니다.'),
         status: 'success',
       })
     },
     onError: (error) => {
-      toast({ description: parseErrorMessage(error), status: 'error' })
+      const message = parseErrorMessage(error)
+      toast({ description: message, status: message.includes('이미 예약') ? 'info' : 'error' })
     },
+    onSettled: () => invalidate(),
+  })
+}
+
+export const useCancelReservationMutation = () => {
+  const toast = useToast()
+  const invalidate = useInvalidateLockerQueries()
+  return useMutation<LockerActionResult, unknown, void>({
+    mutationFn: cancelReservation,
+    retry: false,
+    onSuccess: (result) => toast({ description: result.message, status: 'info' }),
+    onError: (error) => toast({ description: parseErrorMessage(error), status: 'error' }),
+    onSettled: () => invalidate(),
   })
 }
 
@@ -250,7 +275,7 @@ export const useExtendTicketMutation = () => {
 
   return useMutation<LockerActionResult>({
     mutationFn: async () => {
-      return useExtensionTicket()
+      return extendWithTicket()
     },
     onSuccess: (result) => {
       toast({
@@ -274,9 +299,12 @@ export const useSwapCabinetMutation = () => {
         description: resolveSuccessMessage(result.message, '이사 완료되었습니다.'),
         status: 'success',
       })
-      invalidate()
+      return invalidate()
     },
-    onError: (error) => toast({ description: parseErrorMessage(error), status: 'error' }),
+    onError: (error) => {
+      toast({ description: parseErrorMessage(error), status: 'error' })
+      void invalidate()
+    },
   })
 }
 
@@ -286,7 +314,7 @@ export const usePenaltyTicketMutation = () => {
 
   return useMutation<LockerActionResult>({
     mutationFn: async () => {
-      return usePenaltyTicket()
+      return exemptPenaltyWithTicket()
     },
     onSuccess: (result) => {
       toast({

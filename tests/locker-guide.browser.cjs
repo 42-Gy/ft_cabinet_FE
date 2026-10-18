@@ -9,7 +9,8 @@ const output = process.env.GUIDE_TEST_OUTPUT || '/tmp/subak-guide-verification'
 const key = (id) => `subak:locker-guide:v1:user:${id}`
 const user = (id, rented = false) => ({
   userId: id, name: `Test ${id}`, email: `test${id}@example.test`,
-  coin: 0, penaltyDays: 0, monthlyLogtime: 0,
+  coin: 0, penaltyDays: 0, monthlyLogtime: 0, isFirstRental: !rented,
+  reservedVisibleNum: null, reservationRemainingSeconds: null,
   myItems: [{ itemHistoryId: 1, itemType: 'LENT', itemName: '대여권' }],
   ...(rented ? { lentCabinetId: 1, visibleNum: 2045, section: '섹션 1' } : {}),
 })
@@ -40,6 +41,8 @@ async function main() {
     if (request.method() === 'POST') {
       posts.push({ path, body: request.postData() || '' })
       if (path.endsWith('/check-image') && failImageCheck) status = 400
+      if (path.includes('/lent/reservation/')) { me.reservedVisibleNum = Number(path.split('/').at(-1)); me.reservationRemainingSeconds = 900 }
+      if (path.includes('/lent/cabinets/')) { me.isFirstRental = false; me.reservedVisibleNum = null; me.reservationRemainingSeconds = null }
       data = { message: status === 200 ? '요청 완료' : '사물함이 비어 있지 않습니다.' }
     } else if (path.endsWith('/users/me')) {
       status = me ? 200 : 401
@@ -151,8 +154,8 @@ async function main() {
     await noGuide()
     await firstRental
     assert.equal(rentalPosts().length, 1)
-    assert.equal(await stored(101), 'completed')
-    assert.equal(posts.some((p) => p.path.includes('/reservation/')), false)
+    assert.equal(await stored(101), null, 'Onboarding must no longer write localStorage')
+    assert.equal(posts.filter((p) => p.path.includes('/reservation/')).length, 1)
     await openCabinet()
     const nextRental = page.waitForResponse((r) => r.url().includes('/lent/cabinets/'))
     await dialog().getByRole('button', { name: '이 사물함 대여하기' }).click()
@@ -166,7 +169,7 @@ async function main() {
     await button('닫기').click()
     assert.equal(await stored(202), null)
     assert.equal(rentalPosts().length, 2)
-    console.log('PASS 8 original images, 7 steps, previous/next, Escape, focus trap, 320/1280px, cancellation, account storage and API ordering')
+    console.log('PASS 8 original images, 7 steps, previous/next, Escape, focus trap, 320/1280px, cancellation, server first-rental flag and API ordering')
 
     me = user(101, true)
     await page.setViewportSize({ width: 390, height: 844 })
@@ -221,7 +224,7 @@ async function main() {
     assert.match(manualPost, /name="previousPassword"\r\n\r\n0000/)
     assert.match(manualPost, /name="forceReturn"\r\n\r\ntrue/)
     assert.match(manualPost, /name="reason"/)
-    // Storage failure must neither block renting nor repeat the guide in this session.
+    // Storage is irrelevant; the server changes isFirstRental after a successful rent.
     await page.addInitScript(() => {
       const original = Storage.prototype.setItem
       Storage.prototype.setItem = function (key, value) {
@@ -245,7 +248,7 @@ async function main() {
     await noGuide()
     assert.deepEqual(pageErrors, [])
     console.log('PASS manual return after 2 failures, Section C, input preservation and original manual-return payload; no browser errors')
-    console.log('PASS localStorage write failure still permits rental and remembers acknowledgement for this session')
+    console.log('PASS localStorage is unused and the latest server flag skips onboarding after rental')
   } finally {
     await browser.close()
   }

@@ -30,17 +30,20 @@ import {
   Textarea,
   useColorModeValue,
   useDisclosure,
+  useToast,
   Wrap,
   WrapItem,
 } from '@chakra-ui/react'
 import { MdArrowBack, MdChevronLeft, MdChevronRight } from 'react-icons/md'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { PageHeader } from '@/components/molecules/PageHeader'
 import { LoadingState } from '@/components/molecules/LoadingState'
 import { ErrorState } from '@/components/molecules/ErrorState'
 import { EmptyState } from '@/components/molecules/EmptyState'
 import {
   useCabinetDetailQuery,
+  useCancelReservationMutation,
   useCabinetsQuery,
   useCabinetSummaryQuery,
   useCheckReturnImageMutation,
@@ -53,6 +56,8 @@ import { FloorSectionMap } from '@/features/lockers/components/FloorSectionMap'
 import { LockerGuideModal } from '@/features/lockers/components/LockerGuideModal'
 import { LockerHelpButton } from '@/features/lockers/components/LockerHelpButton'
 import { useRentalOnboarding } from '@/features/lockers/hooks/useRentalOnboarding'
+import { useReservationClock } from '@/features/lockers/hooks/useReservationClock'
+import { ReservationPanel, formatReservationTime } from '@/features/lockers/components/ReservationPanel'
 import { extractSectionId, getSectionsByFloor, lockerFloors } from '@/features/lockers/data/cabinetSections'
 import type { Cabinet, CabinetStatus, LockerSectionMeta } from '@/types/locker'
 import { formatDate } from '@/utils/date'
@@ -83,7 +88,13 @@ const getLockerImage = (cabinet: Cabinet, status: CabinetStatus) => {
 }
 
 export const LockersPage = () => {
-  const { data: me } = useMeQuery()
+  const meQuery = useMeQuery(true, true)
+  const { data: me } = meQuery
+  const toast = useToast()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const cancelReservationMutation = useCancelReservationMutation()
+  const remainingSeconds = useReservationClock(me?.reservedVisibleNum, me?.reservationRemainingSeconds, meQuery.dataUpdatedAt, meQuery.refetch)
   const isLoggedIn = Boolean(me)
   const hasLocker = Boolean(me?.lentCabinetId)
   const swapTicketCount = me?.myItems?.filter((item) => item.itemType === 'SWAP').length ?? 0
@@ -98,7 +109,12 @@ export const LockersPage = () => {
   const swapModal = useDisclosure()
   const [swapStep, setSwapStep] = useState<'confirm' | 'return'>('confirm')
   const [swapReturnStep, setSwapReturnStep] = useState<'photo' | 'password'>('photo')
-  const [swapTarget, setSwapTarget] = useState<Cabinet | null>(null)
+  // Recovery uses the visible number from /me, never the detail API's database ID.
+  const [swapTarget, setSwapTarget] = useState<Pick<Cabinet, 'visibleNum'> | null>(null)
+  const swapSubmitLock = useRef(false)
+  const rentalSubmitLock = useRef(false)
+  const reservationSubmitLock = useRef(false)
+  const cancellationLock = useRef(false)
   const [swapFile, setSwapFile] = useState<File | null>(null)
   const [swapPreviewUrl, setSwapPreviewUrl] = useState<string | null>(null)
   const [swapPassword, setSwapPassword] = useState('')
@@ -115,15 +131,26 @@ export const LockersPage = () => {
   const swapStreamRef = useRef<MediaStream | null>(null)
   const swapCameraReadyRef = useRef(false)
   const swapCameraTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const detailQuery = useCabinetDetailQuery(detailDrawer.isOpen ? detailCabinetId : null)
+  const detailQuery = useCabinetDetailQuery(detailDrawer.isOpen ? detailCabinetId : null, isLoggedIn)
+  const detailRemainingSeconds = useReservationClock(
+    detailDrawer.isOpen && detailQuery.data?.isReserved ? detailQuery.data.visibleNum : null,
+    detailQuery.data?.reservationRemainingSeconds, detailQuery.dataUpdatedAt, detailQuery.refetch,
+  )
   const rentMutation = useRentCabinetMutation()
-  const rentalGuide = useRentalOnboarding(me?.userId, (visibleNum) => {
-    if (!isLoggedIn || hasLocker || rentMutation.isPending) return
-    rentMutation.mutate(visibleNum, {
-      onSuccess: () => markCabinetRented(visibleNum),
-    })
-  })
   const reserveMutation = useReserveCabinetMutation()
+  const profileReady = !meQuery.isError && !meQuery.isFetching && typeof me?.isFirstRental === 'boolean'
+  const rentalGuide = useRentalOnboarding(me?.userId, me?.isFirstRental, (visibleNum, intent) => {
+    if (!profileReady) {
+      toast({ status: 'warning', description: '사용자 정보를 확인한 후 다시 시도해주세요.' })
+      return
+    }
+    if (intent === 'swapReservation') {
+      executeSwapReserve(visibleNum)
+      return
+    }
+    if (!isLoggedIn || hasLocker || rentMutation.isPending) return
+    void executeRental(visibleNum)
+  })
   const swapMutation = useSwapCabinetMutation()
   const checkImageMutation = useCheckReturnImageMutation()
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
@@ -366,6 +393,7 @@ export const LockersPage = () => {
       hasLocker &&
       hasSwapTicket &&
       effectiveSelectedStatus === 'AVAILABLE' &&
+      !(selectedCabinet.isReserved && !selectedCabinet.isReservedByMe && me?.reservedVisibleNum !== selectedCabinet.visibleNum) &&
       selectedCabinet.visibleNum !== me?.visibleNum,
   )
   const handleSectionSelect = (section: LockerSectionMeta) => {
@@ -409,25 +437,74 @@ export const LockersPage = () => {
     swapModal.onClose()
   }
 
-  const handleSwapStart = () => {
-    if (!selectedCabinet || !canSwapSelected) return
-    setSwapTarget(selectedCabinet)
+  const handleSwapStart = (cabinet: Cabinet) => {
+    if (!profileReady || !hasSwapTicket || cabinet.status !== 'AVAILABLE' || cabinet.visibleNum === me?.visibleNum) return
+    setSwapTarget(cabinet)
     setSwapStep('confirm')
     swapModal.onOpen()
   }
 
   const handleSwapReserve = () => {
-    if (!swapTarget) return
-    reserveMutation.mutate(swapTarget.visibleNum, {
+    if (!swapTarget || !profileReady || reserveMutation.isPending) return
+    rentalGuide.requestRental(swapTarget.visibleNum, hasLocker ? 'swapReservation' : 'rent')
+  }
+
+  const handleRentRequest = (visibleNum: number) => {
+    if (me?.reservedVisibleNum != null && me.reservedVisibleNum !== visibleNum) {
+      setSwapTarget({ visibleNum })
+      setSwapStep('confirm')
+      swapModal.onOpen()
+    } else rentalGuide.requestRental(visibleNum)
+  }
+
+  const executeRental = async (visibleNum: number) => {
+    if (rentalSubmitLock.current || reserveMutation.isPending || cancelReservationMutation.isPending) return
+    rentalSubmitLock.current = true
+    try {
+      // The guide has finished before this first reservation request.
+      // An existing reservation is reused without extending its deadline.
+      if (me?.reservedVisibleNum !== visibleNum) await reserveMutation.mutateAsync(visibleNum)
+      const fresh = await meQuery.refetch()
+      if (fresh.isError || !fresh.data || fresh.data.userId !== me?.userId || fresh.data.lentCabinetId || fresh.data.reservedVisibleNum !== visibleNum || fresh.data.reservationRemainingSeconds === 0) {
+        toast({ status: 'warning', description: '예약 상태를 확인할 수 없습니다. 최신 상태를 확인한 후 다시 진행해주세요.' })
+        return
+      }
+      await rentMutation.mutateAsync(visibleNum)
+      markCabinetRented(visibleNum)
+      if (swapModal.isOpen) handleSwapModalClose()
+    } catch {
+      // Mutations display the server error and refresh state. Never retry a POST here.
+    } finally {
+      rentalSubmitLock.current = false
+    }
+  }
+
+  const executeSwapReserve = (visibleNum: number) => {
+    if (reserveMutation.isPending || reservationSubmitLock.current || cancellationLock.current) return
+    if (me?.reservedVisibleNum === visibleNum) {
+      toast({ status: 'info', description: '이미 예약 중인 사물함이 있습니다. 기존 이사를 이어서 진행합니다.' })
+      handleResumeReservation()
+      return
+    }
+    reservationSubmitLock.current = true
+    reserveMutation.mutate(visibleNum, {
       onSuccess: () => {
         setSwapReturnStep('photo')
         setSwapStep('return')
       },
+      onSettled: () => { reservationSubmitLock.current = false },
     })
   }
 
-  const handleSwapSubmit = () => {
-    if (!swapTarget || !swapFile || swapPassword.trim().length !== 4) return
+  const handleSwapSubmit = async () => {
+    if (!swapTarget || !swapFile || swapPassword.trim().length !== 4 || swapSubmitLock.current || swapMutation.isPending) return
+    swapSubmitLock.current = true
+    const fresh = await meQuery.refetch()
+    swapSubmitLock.current = false
+    if (fresh.isError || fresh.data?.userId !== me?.userId || !fresh.data?.lentCabinetId || fresh.data.lentCabinetId !== me?.lentCabinetId || fresh.data.reservedVisibleNum !== swapTarget.visibleNum || fresh.data.reservationRemainingSeconds === 0) {
+      toast({ status: 'warning', description: '예약 상태가 변경되었거나 확인되지 않습니다. 예약 정보를 다시 확인해주세요.' })
+      return
+    }
     swapMutation.mutate(
       {
         newVisibleNum: swapTarget.visibleNum,
@@ -444,6 +521,45 @@ export const LockersPage = () => {
       },
     )
   }
+
+  const handleResumeReservation = () => {
+    if (!profileReady || me?.reservedVisibleNum == null || remainingSeconds === 0) return
+    if (!hasLocker) {
+      rentalGuide.requestRental(me.reservedVisibleNum)
+      return
+    }
+    setSwapTarget({ visibleNum: me.reservedVisibleNum })
+    setSwapReturnStep('photo')
+    setSwapStep('return')
+    swapModal.onOpen()
+  }
+
+  const handleCancelReservation = () => {
+    if (cancellationLock.current || rentalSubmitLock.current || reservationSubmitLock.current || swapSubmitLock.current || cancelReservationMutation.isPending || reserveMutation.isPending || swapMutation.isPending) return
+    cancellationLock.current = true
+    cancelReservationMutation.mutate(undefined, {
+      onSuccess: () => { if (swapModal.isOpen) handleSwapModalClose() },
+      onSettled: () => { cancellationLock.current = false },
+    })
+  }
+
+  const { refetch: refreshMe } = meQuery
+  const { onOpen: openSwapModal } = swapModal
+  useEffect(() => {
+    if (!location.state?.resumeReservation) return
+    let active = true
+    void refreshMe().then((result) => {
+      if (!active) return
+      if (!result.isError && result.data?.lentCabinetId && result.data.reservedVisibleNum != null && result.data.reservationRemainingSeconds !== 0) {
+        setSwapTarget({ visibleNum: result.data.reservedVisibleNum })
+        setSwapReturnStep('photo')
+        setSwapStep('return')
+        openSwapModal()
+      }
+      navigate(location.pathname, { replace: true, state: null })
+    })
+    return () => { active = false }
+  }, [location.state, location.pathname, navigate, refreshMe, openSwapModal])
 
   const handleSwapCheckImage = () => {
     if (!swapFile) return
@@ -601,6 +717,10 @@ export const LockersPage = () => {
       body = <EmptyState title="정보가 없습니다" description="사물함 상세를 불러올 수 없습니다." />
     } else {
       const detail = detailQuery.data
+      const listEntry = cabinetsForSection.find((cabinet) => cabinet.cabinetId === detail.cabinetId)
+      const reservedByMe = detail.isReservedByMe === true || listEntry?.isReservedByMe === true || me?.reservedVisibleNum === detail.visibleNum
+      const reservedByOther = (detail.isReserved || listEntry?.isReserved) && !reservedByMe
+      const reservationSnapshotMissing = reservedByMe && me?.reservedVisibleNum !== detail.visibleNum
       body = (
         <Stack spacing={4}>
           <Stack spacing={2}>
@@ -640,15 +760,26 @@ export const LockersPage = () => {
           </Stack>
           <Divider />
           <Stack spacing={2}>
+            {detail.status === 'AVAILABLE' && (detail.isReserved || listEntry?.isReserved || reservedByMe) && (
+              <Stack spacing={1}>
+                <Badge colorScheme={reservedByMe ? 'brand' : 'purple'} alignSelf="start">
+                  {reservedByMe ? '내가 예약 중' : '예약 중'}
+                </Badge>
+                <Text fontSize="sm">
+                  {reservedByOther ? '다른 사용자가 예약 중이므로 대여하거나 예약할 수 없습니다.' : '기존 예약을 취소하거나 남은 절차를 이어서 진행할 수 있습니다.'}
+                </Text>
+                {detailRemainingSeconds != null && <Text fontSize="sm">남은 시간 {formatReservationTime(detailRemainingSeconds)}</Text>}
+              </Stack>
+            )}
             {!hasLocker && (
               <Button
                 colorScheme="brand"
-                isDisabled={!isLoggedIn || detail.status !== 'AVAILABLE'}
-                isLoading={rentMutation.isPending && rentMutation.variables === detail.visibleNum}
+                isDisabled={!isLoggedIn || !profileReady || reservationSnapshotMissing || detail.status !== 'AVAILABLE' || Boolean(reservedByOther) || cancelReservationMutation.isPending}
+                isLoading={rentMutation.isPending || reserveMutation.isPending}
                 onClick={() =>
                   isLoggedIn &&
                   detail.status === 'AVAILABLE' &&
-                  rentalGuide.requestRental(detail.visibleNum)
+                  handleRentRequest(detail.visibleNum)
                 }
               >
                 {isLoggedIn ? '이 사물함 대여하기' : '로그인 후 대여 가능'}
@@ -658,16 +789,19 @@ export const LockersPage = () => {
               <Button
                 variant="outline"
                 colorScheme="brand"
-                isDisabled={!canSwapSelected}
+                isDisabled={!profileReady || reservationSnapshotMissing || Boolean(reservedByOther) || (!reservedByMe && !canSwapSelected) || (reservedByMe && remainingSeconds === 0) || cancelReservationMutation.isPending}
                 onClick={() => {
-                  if (!canSwapSelected) return
-                  setSelectedCabinetId(detail.cabinetId)
-                  handleSwapStart()
+                  if (reservedByMe) handleResumeReservation()
+                  else if (listEntry) handleSwapStart(listEntry)
                 }}
               >
-                이사하기
+                {reservedByMe ? '진행 중인 이사 이어하기' : '이사하기'}
               </Button>
             )}
+            {reservedByMe && <Button variant="outline" onClick={handleCancelReservation} isLoading={cancelReservationMutation.isPending}>예약 취소</Button>}
+            {reservationSnapshotMissing && <Stack><Text fontSize="sm">내 예약 정보를 동기화한 후 이어서 진행해주세요.</Text><Button size="sm" onClick={() => meQuery.refetch()} isLoading={meQuery.isFetching}>예약 상태 확인</Button></Stack>}
+            {hasLocker && !reservedByMe && !hasSwapTicket && <Text fontSize="sm">이사권이 필요합니다. 보유 아이템을 확인해주세요.</Text>}
+            {!profileReady && isLoggedIn && <Button size="sm" variant="ghost" onClick={() => meQuery.refetch()} isLoading={meQuery.isFetching}>내 정보 새로고침</Button>}
           </Stack>
         </Stack>
       )
@@ -706,6 +840,20 @@ export const LockersPage = () => {
           description="지도에서 위치를 선택하고, 상세 화면에서 실시간 상태를 확인한 뒤 대여하세요."
           action={<LockerHelpButton section="rental" />}
         />
+
+        {(meQuery.isError || (me && typeof me.isFirstRental !== 'boolean')) && (
+          <Alert status="warning" borderRadius="md">
+            <AlertIcon />
+            <Stack>
+              <Text>사용자 대여 정보를 확인할 수 없습니다. 새로고침 후 다시 시도해주세요.</Text>
+              <Button size="sm" onClick={() => meQuery.refetch()} isLoading={meQuery.isFetching}>내 정보 새로고침</Button>
+            </Stack>
+          </Alert>
+        )}
+        <ReservationPanel visibleNum={me?.reservedVisibleNum} remainingSeconds={remainingSeconds}
+          isSwap={hasLocker} isRefreshing={meQuery.isFetching} isUnavailable={meQuery.isError}
+          isCancelPending={cancelReservationMutation.isPending || reserveMutation.isPending || swapMutation.isPending}
+          onContinue={handleResumeReservation} onCancel={handleCancelReservation} onRefresh={() => { void meQuery.refetch() }} />
 
         {!isLoggedIn && (
           <Alert status="info" borderRadius="md">
@@ -870,6 +1018,7 @@ export const LockersPage = () => {
                       return (
                         <Box
                           key={cabinet.cabinetId}
+                          position="relative"
                           borderRadius="xl"
                           borderWidth={statusStyle.borderWidth ?? 1}
                           borderColor={statusStyle.border}
@@ -889,6 +1038,11 @@ export const LockersPage = () => {
                           bgRepeat="no-repeat"
                           onClick={() => handleLockerSelect(cabinet)}
                         >
+                          {effectiveStatus === 'AVAILABLE' && cabinet.isReserved && (
+                            <Badge position="absolute" top={-2} fontSize="10px" colorScheme={cabinet.isReservedByMe || me?.reservedVisibleNum === cabinet.visibleNum ? 'brand' : 'purple'}>
+                              {cabinet.isReservedByMe || me?.reservedVisibleNum === cabinet.visibleNum ? '내가 예약 중' : '예약 중'}
+                            </Badge>
+                          )}
                           <Text
                             fontWeight="extrabold"
                             fontSize={{ base: 'lg', md: 'xl' }}
@@ -926,17 +1080,39 @@ export const LockersPage = () => {
           overflowY="auto"
         >
           <ModalHeader>
-            {swapStep === 'confirm' ? '이사 예약' : '사물함 반납 후 이사'}
+            {swapStep === 'confirm' ? (hasLocker ? '이사 예약' : '사물함 대여 예약') : '사물함 반납 후 이사'}
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody
             sx={{ WebkitOverflowScrolling: 'touch' }}
           >
+            {swapStep === 'return' && (
+              <Stack spacing={3} mb={4}>
+                <ReservationPanel visibleNum={me?.reservedVisibleNum} remainingSeconds={remainingSeconds}
+                  isSwap isRefreshing={meQuery.isFetching} isUnavailable={meQuery.isError}
+                  isCancelPending={cancelReservationMutation.isPending || swapMutation.isPending}
+                  onContinue={handleResumeReservation} onCancel={handleCancelReservation}
+                  onRefresh={() => { void meQuery.refetch() }} />
+                {(meQuery.isError || me?.reservedVisibleNum !== swapTarget?.visibleNum || remainingSeconds === 0) && (
+                  <Alert status="warning" borderRadius="md"><AlertIcon />
+                    <Stack><Text>진행 중인 예약을 확인할 수 없습니다. 입력 내용은 유지되며, 서버 예약 상태를 다시 확인해야 합니다.</Text>
+                      <Button size="sm" onClick={() => meQuery.refetch()} isLoading={meQuery.isFetching}>예약 다시 확인</Button>
+                    </Stack>
+                  </Alert>
+                )}
+              </Stack>
+            )}
             {swapStep === 'confirm' ? (
               <Stack spacing={4}>
                 <Text fontWeight="bold">
-                  이사는 취소할 수 없으며, 반납 절차를 반드시 완료해야 합니다.
+                  {hasLocker ? '예약 후 사진 검증과 비밀번호 입력을 마치면 이사가 확정됩니다.' : '예약을 변경한 후 선택한 사물함의 대여를 진행합니다.'}
                 </Text>
+                {me?.reservedVisibleNum != null && me.reservedVisibleNum !== swapTarget?.visibleNum && (
+                  <Alert status="warning" borderRadius="md"><AlertIcon />
+                    기존 예약이 취소되고 새로운 사물함으로 변경됩니다.
+                  </Alert>
+                )}
+                <Text fontSize="sm" color={mutedText}>닫아도 서버 예약은 유지됩니다. 사물함 또는 내 사물함 화면에서 이어서 진행하거나 취소할 수 있습니다.</Text>
                 <Text fontSize="sm" color={mutedText}>
                   이사하기를 누르면 선택한 사물함이 15분 동안 예약되며, 그 시간 동안 다른 사용자는
                   사용할 수 없습니다.
@@ -1123,19 +1299,23 @@ export const LockersPage = () => {
               <Button
                 colorScheme="brand"
                 onClick={handleSwapReserve}
-                isDisabled={!swapTarget}
+                isDisabled={!swapTarget || !profileReady || cancelReservationMutation.isPending}
                 isLoading={reserveMutation.isPending}
               >
-                이사 예약하기
+                {me?.reservedVisibleNum != null && me.reservedVisibleNum !== swapTarget?.visibleNum ? '예약 변경하기' : '이사 예약하기'}
               </Button>
             ) : (
               swapReturnStep === 'password' && (
                 <Button
                   colorScheme="brand"
                   onClick={handleSwapSubmit}
-                  isLoading={swapMutation.isPending}
+                  isLoading={swapMutation.isPending || meQuery.isFetching}
                   isDisabled={
                     !swapFile ||
+                    cancelReservationMutation.isPending ||
+                    meQuery.isError ||
+                    me?.reservedVisibleNum !== swapTarget?.visibleNum ||
+                    remainingSeconds === 0 ||
                     swapPassword.trim().length !== 4 ||
                     (!swapCheckPassed && !swapForceReturn)
                   }

@@ -7,6 +7,8 @@ export interface Cabinet {
   section: string
   lentType?: string
   status: CabinetStatus
+  isReserved?: boolean
+  isReservedByMe?: boolean
   statusNote?: string
   lentUserName?: string
   lentStartedAt?: string
@@ -54,6 +56,9 @@ export interface CabinetDetail {
   floor: number
   section: string
   status: CabinetStatus
+  isReserved?: boolean
+  isReservedByMe?: boolean
+  reservationRemainingSeconds?: number | null
   statusNote?: string
   lentUserName?: string
   lentStartedAt?: string

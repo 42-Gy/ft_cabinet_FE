@@ -43,13 +43,20 @@ import {
   usePenaltyTicketMutation,
   useRenewTicketMutation,
   useReturnCabinetMutation,
+  useCancelReservationMutation,
 } from '@/features/lockers/hooks/useLockerData'
 import { useMeQuery } from '@/features/users/hooks/useMeQuery'
+import { useReservationClock } from '@/features/lockers/hooks/useReservationClock'
+import { ReservationPanel } from '@/features/lockers/components/ReservationPanel'
 import type { UserItemType } from '@/types/user'
 import { formatDate } from '@/utils/date'
 
 export const MyLockersPage = () => {
-  const { data: me, isLoading, isError, refetch } = useMeQuery()
+  const meQuery = useMeQuery(true, true)
+  const { data: me, isLoading, isError, refetch } = meQuery
+  const cancelReservationMutation = useCancelReservationMutation()
+  const cancellationLock = useRef(false)
+  const remainingSeconds = useReservationClock(me?.reservedVisibleNum, me?.reservationRemainingSeconds, meQuery.dataUpdatedAt, refetch)
   const returnMutation = useReturnCabinetMutation()
   const imageCheckMutation = useCheckReturnImageMutation()
   const extendMutation = useExtendTicketMutation()
@@ -262,6 +269,7 @@ export const MyLockersPage = () => {
         title="로그인이 필요해요"
         description="우측 상단의 로그인 버튼을 눌러 로그인한 뒤 이용해 주세요."
       />
+
     )
   }
 
@@ -496,6 +504,18 @@ export const MyLockersPage = () => {
         description="현재 수박씨, 대여 중인 사물함, 보유한 아이템을 한 번에 확인하세요."
         action={<LockerHelpButton section="return" />}
       />
+
+      <ReservationPanel visibleNum={me.reservedVisibleNum} remainingSeconds={remainingSeconds}
+        isSwap={hasLocker} isRefreshing={meQuery.isFetching}
+        isCancelPending={cancelReservationMutation.isPending}
+        continueLabel={hasLocker ? '진행 중인 이사 이어하기' : '예약 사물함 확인'}
+        onContinue={() => navigate('/lockers', { state: { resumeReservation: hasLocker } })}
+        onCancel={() => {
+          if (cancelReservationMutation.isPending || cancellationLock.current) return
+          cancellationLock.current = true
+          cancelReservationMutation.mutate(undefined, { onSettled: () => { cancellationLock.current = false } })
+        }}
+        onRefresh={() => { void refetch() }} />
 
       <Stack spacing={6} direction={{ base: 'column', md: 'row' }} align="flex-start">
         <Box
