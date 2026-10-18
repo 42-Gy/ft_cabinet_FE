@@ -50,6 +50,9 @@ import {
 } from '@/features/lockers/hooks/useLockerData'
 import { useMeQuery } from '@/features/users/hooks/useMeQuery'
 import { FloorSectionMap } from '@/features/lockers/components/FloorSectionMap'
+import { LockerGuideModal } from '@/features/lockers/components/LockerGuideModal'
+import { LockerHelpButton } from '@/features/lockers/components/LockerHelpButton'
+import { useRentalOnboarding } from '@/features/lockers/hooks/useRentalOnboarding'
 import { extractSectionId, getSectionsByFloor, lockerFloors } from '@/features/lockers/data/cabinetSections'
 import type { Cabinet, CabinetStatus, LockerSectionMeta } from '@/types/locker'
 import { formatDate } from '@/utils/date'
@@ -114,6 +117,12 @@ export const LockersPage = () => {
   const swapCameraTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const detailQuery = useCabinetDetailQuery(detailDrawer.isOpen ? detailCabinetId : null)
   const rentMutation = useRentCabinetMutation()
+  const rentalGuide = useRentalOnboarding(me?.userId, (visibleNum) => {
+    if (!isLoggedIn || hasLocker || rentMutation.isPending) return
+    rentMutation.mutate(visibleNum, {
+      onSuccess: () => markCabinetRented(visibleNum),
+    })
+  })
   const reserveMutation = useReserveCabinetMutation()
   const swapMutation = useSwapCabinetMutation()
   const checkImageMutation = useCheckReturnImageMutation()
@@ -639,9 +648,7 @@ export const LockersPage = () => {
                 onClick={() =>
                   isLoggedIn &&
                   detail.status === 'AVAILABLE' &&
-                  rentMutation.mutate(detail.visibleNum, {
-                    onSuccess: () => markCabinetRented(detail.visibleNum),
-                  })
+                  rentalGuide.requestRental(detail.visibleNum)
                 }
               >
                 {isLoggedIn ? '이 사물함 대여하기' : '로그인 후 대여 가능'}
@@ -679,7 +686,12 @@ export const LockersPage = () => {
         <DrawerOverlay />
         <DrawerContent>
           <DrawerCloseButton />
-          <DrawerHeader>사물함 상세</DrawerHeader>
+          <DrawerHeader pr={12}>
+            <HStack>
+              <Text>사물함 상세</Text>
+              <LockerHelpButton section="rental" />
+            </HStack>
+          </DrawerHeader>
           <DrawerBody>{body}</DrawerBody>
         </DrawerContent>
       </Drawer>
@@ -692,6 +704,7 @@ export const LockersPage = () => {
         <PageHeader
           title="섹션별 사물함"
           description="지도에서 위치를 선택하고, 상세 화면에서 실시간 상태를 확인한 뒤 대여하세요."
+          action={<LockerHelpButton section="rental" />}
         />
 
         {!isLoggedIn && (
@@ -831,6 +844,7 @@ export const LockersPage = () => {
                   <LegendItem color={legendInUse} label="대여 중/연체" />
                   <LegendItem color={legendUnavailable} label="점검/불가" />
                   <LegendItem color={legendSelected} label="선택됨" />
+                  <LockerHelpButton section="rental" />
                 </Wrap>
 
                 <Divider />
@@ -895,6 +909,10 @@ export const LockersPage = () => {
           </Stack>
         )}
       </Stack>
+
+      {rentalGuide.isOpen && (
+        <LockerGuideModal section="all" onClose={rentalGuide.close} onComplete={rentalGuide.complete} />
+      )}
 
       <Modal
         isOpen={swapModal.isOpen}

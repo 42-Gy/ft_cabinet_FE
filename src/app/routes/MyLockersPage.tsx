@@ -29,6 +29,7 @@ import { EmptyState } from '@/components/molecules/EmptyState'
 import { ErrorState } from '@/components/molecules/ErrorState'
 import { LoadingState } from '@/components/molecules/LoadingState'
 import { PageHeader } from '@/components/molecules/PageHeader'
+import { LockerHelpButton } from '@/features/lockers/components/LockerHelpButton'
 import { useStartSocialLink } from '@/features/auth/hooks/useStartSocialLink'
 import {
   consumeRecentSocialProviderLinked,
@@ -493,6 +494,7 @@ export const MyLockersPage = () => {
       <PageHeader
         title="내 사물함 & 보유아이템"
         description="현재 수박씨, 대여 중인 사물함, 보유한 아이템을 한 번에 확인하세요."
+        action={<LockerHelpButton section="return" />}
       />
 
       <Stack spacing={6} direction={{ base: 'column', md: 'row' }} align="flex-start">
@@ -853,7 +855,15 @@ export const MyLockersPage = () => {
         <Modal isOpen={returnModal.isOpen} onClose={handleReturnClose} size="lg">
           <ModalOverlay />
           <ModalContent>
-            <ModalHeader>사물함 반납</ModalHeader>
+            <ModalHeader pr={12}>
+              <HStack>
+                <Text>{forceReturn ? '사물함 수동 반납' : '사물함 반납'}</Text>
+                <LockerHelpButton
+                  key={forceReturn ? 'manual' : 'return'}
+                  section={forceReturn ? 'manual' : 'return'}
+                />
+              </HStack>
+            </ModalHeader>
             <ModalCloseButton />
             <ModalBody>
               <Stack spacing={4}>
@@ -1007,10 +1017,21 @@ export const MyLockersPage = () => {
                 {returnStep === 'password' && (
                   <Stack spacing={4}>
                     <Text fontSize="sm" color={textMuted}>
-                      사진 확인이 완료되었습니다. 비밀번호를 입력하고 반납을 완료하세요.
+                      {forceReturn
+                        ? '수동 반납입니다. 비밀번호 설정 전의 초기 비밀번호를 입력하고 반납 사유를 작성해주세요.'
+                        : '사진 확인이 완료되었습니다. 사용 중 설정했던 비밀번호를 입력하고 반납을 완료하세요.'}
+                    </Text>
+                    <Text fontSize="sm" fontWeight="bold" color="brand.600">
+                      {forceReturn
+                        ? '수동 반납 역시 반납 전 비밀번호 초기화가 필수입니다.'
+                        : '반납 전 사물함 비밀번호를 초기화해야 합니다.'}
                     </Text>
                     <FormControl>
-                      <FormLabel>이전 비밀번호 (4자리)</FormLabel>
+                      <FormLabel>
+                        {forceReturn
+                          ? '설정 전 초기 비밀번호 (4자리)'
+                          : '사용 중 설정했던 비밀번호 (4자리)'}
+                      </FormLabel>
                       <Input
                         type="tel"
                         inputMode="numeric"
